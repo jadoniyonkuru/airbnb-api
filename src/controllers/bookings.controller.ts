@@ -24,10 +24,10 @@ export const getBookingById = async (req: Request, res: Response, next: NextFunc
     const booking = await prisma.booking.findUnique({
       where: { id },
       include: {
-        guest: true,  // 👈 full guest details
+        guest: true,
         listing: {
           include: {
-            host: { select: { name: true } }  // 👈 listing with host name
+            host: { select: { name: true } }
           }
         }
       }
@@ -49,7 +49,7 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
   try {
     const result = createBookingSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ errors: result.error.errors });
+      res.status(400).json({ errors: result.error.flatten().fieldErrors });
       return;
     }
 
@@ -73,7 +73,7 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
       return;
     }
 
-    // calculate total price server-side 👇
+    // calculate total price server-side
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
     const nights = Math.ceil(
@@ -82,7 +82,13 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
     const totalPrice = nights * listing.pricePerNight;
 
     const newBooking = await prisma.booking.create({
-      data: { guestId, listingId, checkIn: checkInDate, checkOut: checkOutDate, totalPrice }
+      data: {
+        guestId,
+        listingId,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        totalPrice
+      }
     });
 
     res.status(201).json(newBooking);

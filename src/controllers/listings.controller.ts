@@ -8,7 +8,7 @@ export const getAllListings = async (req: Request, res: Response, next: NextFunc
     const listings = await prisma.listing.findMany({
       include: {
         host: { select: { name: true, avatar: true } },
-        _count: { select: { bookings: true } }  // 👈 booking count
+        _count: { select: { bookings: true } }
       }
     });
     res.json(listings);
@@ -28,7 +28,7 @@ export const getListingById = async (req: Request, res: Response, next: NextFunc
         bookings: {
           include: {
             guest: {
-              select: { name: true, avatar: true }  // 👈 guest name and avatar per booking
+              select: { name: true, avatar: true }
             }
           }
         }
@@ -51,7 +51,7 @@ export const createListing = async (req: Request, res: Response, next: NextFunct
   try {
     const result = createListingSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ errors: result.error.errors });
+      res.status(400).json({ errors: result.error.flatten().fieldErrors });
       return;
     }
 
@@ -84,7 +84,7 @@ export const updateListing = async (req: Request, res: Response, next: NextFunct
 
     const result = updateListingSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ errors: result.error.errors });
+      res.status(400).json({ errors: result.error.flatten().fieldErrors });
       return;
     }
 
