@@ -1,44 +1,103 @@
 import { Request, Response } from "express";
-import { users, User } from "../models/user.model";
+import prisma from "../config/prisma";
 
-export const getAllUsers = (req: Request, res: Response) => {
-  res.json(users);
+// GET /users
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      include: {
+        _count: { select: { listings: true } }
+      }
+    });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
-export const getUserById = (req: Request, res: Response) => {
-  const user = users.find((u) => u.id === parseInt(req.params.id));
-  if (!user) return res.status(404).json({ message: "User not found" });
-  res.json(user);
+// GET /users/:id
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { listings: true, bookings: true }
+    });
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
-export const createUser = (req: Request, res: Response) => {
-  const { name, email, username, phone, role } = req.body;
-  if (!name || !email || !username || !phone || !role)
-    return res.status(400).json({ message: "Missing required fields: name, email, username, phone, role" });
+// POST /users
+export const createUser = async (req: Request, res: Response) => {
+  try {
+    const { name, email, username, phone, role } = req.body;
 
-  if (users.some((u) => u.email === email))
-    return res.status(409).json({ message: "Email already in use" });
+    if (!name || !email || !username || !phone || !role) {
+      res.status(400).json({ message: "Missing required fields" });
+      return;
+    }
 
-  const newUser: User = { id: users.length + 1, name, email, username, phone, role, avatar: req.body.avatar, bio: req.body.bio };
-  users.push(newUser);
-  res.status(201).json(newUser);
+    // check duplicate email
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      res.status(409).json({ message: "Email already exists" });
+      return;
+    }
+
+    const newUser = await prisma.user.create({
+      data: { name, email, username, phone, role }
+    });
+
+    res.status(201).json(newUser);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
-export const updateUser = (req: Request, res: Response) => {
-  const index = users.findIndex((u) => u.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ message: "User not found" });
+// PUT /users/:id
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
 
-  if (req.body.email && users.some((u) => u.email === req.body.email && u.id !== users[index].id))
-    return res.status(409).json({ message: "Email already in use" });
+    const existing = await prisma.user.findFirst({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
 
-  users[index] = { ...users[index], ...req.body, id: users[index].id };
-  res.json(users[index]);
+    const updated = await prisma.user.update({
+      where: { id },
+      data: req.body
+    });
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
-export const deleteUser = (req: Request, res: Response) => {
-  const index = users.findIndex((u) => u.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ message: "User not found" });
+// DELETE /users/:id
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
 
-  const deleted = users.splice(index, 1)[0];
-  res.json({ message: "User deleted", user: deleted });
+    const existing = await prisma.user.findFirst({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    await prisma.user.delete({ where: { id } });
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };

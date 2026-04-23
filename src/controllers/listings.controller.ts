@@ -1,38 +1,103 @@
 import { Request, Response } from "express";
-import { listings, Listing } from "../models/listing.model";
+import prisma from "../config/prisma";
 
-export const getAllListings = (req: Request, res: Response) => {
-  res.json(listings);
+// GET /listings
+export const getAllListings = async (req: Request, res: Response) => {
+  try {
+    const listings = await prisma.listing.findMany({
+      include: {
+        host: { select: { name: true, avatar: true } }
+      }
+    });
+    res.json(listings);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
-export const getListingById = (req: Request, res: Response) => {
-  const listing = listings.find((l) => l.id === parseInt(req.params.id));
-  if (!listing) return res.status(404).json({ message: "Listing not found" });
-  res.json(listing);
+// GET /listings/:id
+export const getListingById = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const listing = await prisma.listing.findUnique({
+      where: { id },
+      include: { host: true, bookings: true }
+    });
+
+    if (!listing) {
+      res.status(404).json({ message: "Listing not found" });
+      return;
+    }
+
+    res.json(listing);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
-export const createListing = (req: Request, res: Response) => {
-  const { title, description, location, pricePerNight, guests, type, amenities, host } = req.body;
-  if (!title || !description || !location || !pricePerNight || !guests || !type || !amenities || !host)
-    return res.status(400).json({ message: "Missing required fields: title, description, location, pricePerNight, guests, type, amenities, host" });
+// POST /listings
+export const createListing = async (req: Request, res: Response) => {
+  try {
+    const { title, description, location, pricePerNight, guests, type, amenities, hostId } = req.body;
 
-  const newListing: Listing = { id: listings.length + 1, title, description, location, pricePerNight, guests, type, amenities, host, rating: req.body.rating };
-  listings.push(newListing);
-  res.status(201).json(newListing);
+    if (!title || !description || !location || !pricePerNight || !guests || !type || !amenities || !hostId) {
+      res.status(400).json({ message: "Missing required fields" });
+      return;
+    }
+
+    // verify host exists
+    const host = await prisma.user.findFirst({ where: { id: hostId } });
+    if (!host) {
+      res.status(404).json({ message: "Host not found" });
+      return;
+    }
+
+    const newListing = await prisma.listing.create({
+      data: { title, description, location, pricePerNight, guests, type, amenities, hostId }
+    });
+
+    res.status(201).json(newListing);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
-export const updateListing = (req: Request, res: Response) => {
-  const index = listings.findIndex((l) => l.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ message: "Listing not found" });
+// PUT /listings/:id
+export const updateListing = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
 
-  listings[index] = { ...listings[index], ...req.body, id: listings[index].id };
-  res.json(listings[index]);
+    const existing = await prisma.listing.findFirst({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ message: "Listing not found" });
+      return;
+    }
+
+    const updated = await prisma.listing.update({
+      where: { id },
+      data: req.body
+    });
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
-export const deleteListing = (req: Request, res: Response) => {
-  const index = listings.findIndex((l) => l.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ message: "Listing not found" });
+// DELETE /listings/:id
+export const deleteListing = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
 
-  const deleted = listings.splice(index, 1)[0];
-  res.json({ message: "Listing deleted", listing: deleted });
+    const existing = await prisma.listing.findFirst({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ message: "Listing not found" });
+      return;
+    }
+
+    await prisma.listing.delete({ where: { id } });
+    res.json({ message: "Listing deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
