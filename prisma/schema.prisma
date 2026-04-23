@@ -1,9 +1,11 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
 }
+
 // Enums
 enum Role {
   HOST
@@ -36,10 +38,20 @@ model User {
   createdAt DateTime  @default(now())
   listings  Listing[]
   bookings  Booking[]
+  profile   Profile?  // 👈 one-to-one relation
+}
+
+model Profile {
+  id      Int     @id @default(autoincrement())
+  bio     String?
+  website String?
+  country String?
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  Int     @unique  // 👈 @unique enforces one-to-one
 }
 
 model Listing {
-  id            Int         @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
   title         String
   description   String
   location      String
@@ -48,9 +60,9 @@ model Listing {
   type          ListingType
   amenities     String[]
   rating        Float?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  host          User        @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  host          User           @relation(fields: [hostId], references: [id], onDelete: Cascade)
   hostId        Int
   bookings      Booking[]
 }

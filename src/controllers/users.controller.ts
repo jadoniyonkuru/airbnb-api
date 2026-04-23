@@ -45,7 +45,6 @@ export const createUser = async (req: Request, res: Response) => {
       return;
     }
 
-    // check duplicate email
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       res.status(409).json({ message: "Email already exists" });
@@ -97,6 +96,82 @@ export const deleteUser = async (req: Request, res: Response) => {
 
     await prisma.user.delete({ where: { id } });
     res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+// GET /users/:id/profile
+export const getUserProfile = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    const profile = await prisma.profile.findUnique({
+      where: { userId: id },
+      include: { user: true }
+    });
+
+    if (!profile) {
+      res.status(404).json({ message: "Profile not found" });
+      return;
+    }
+
+    res.json(profile);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+// POST /users/:id/profile
+export const createUserProfile = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    const user = await prisma.user.findFirst({ where: { id } });
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const existing = await prisma.profile.findUnique({ where: { userId: id } });
+    if (existing) {
+      res.status(409).json({ message: "Profile already exists for this user" });
+      return;
+    }
+
+    const { bio, website, country } = req.body;
+
+    const profile = await prisma.profile.create({
+      data: { userId: id, bio, website, country }
+    });
+
+    res.status(201).json(profile);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+
+// PUT /users/:id/profile
+export const updateUserProfile = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    const existing = await prisma.profile.findUnique({ where: { userId: id } });
+    if (!existing) {
+      res.status(404).json({ message: "Profile not found" });
+      return;
+    }
+
+    const { bio, website, country } = req.body;
+
+    const updated = await prisma.profile.update({
+      where: { userId: id },
+      data: { bio, website, country }
+    });
+
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ message: "Something went wrong" });
   }
