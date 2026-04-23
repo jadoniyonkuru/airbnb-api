@@ -1,27 +1,38 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
+import { createListingSchema, updateListingSchema } from "../validators/listings.validator";
 
 // GET /listings
-export const getAllListings = async (req: Request, res: Response) => {
+export const getAllListings = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const listings = await prisma.listing.findMany({
       include: {
-        host: { select: { name: true, avatar: true } }
+        host: { select: { name: true, avatar: true } },
+        _count: { select: { bookings: true } }  // 👈 booking count
       }
     });
     res.json(listings);
   } catch (error) {
-    res.status(500).json({ message: "Something went wrong" });
+    next(error);
   }
 };
 
 // GET /listings/:id
-export const getListingById = async (req: Request, res: Response) => {
+export const getListingById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.id);
     const listing = await prisma.listing.findUnique({
       where: { id },
-      include: { host: true, bookings: true }
+      include: {
+        host: true,
+        bookings: {
+          include: {
+            guest: {
+              select: { name: true, avatar: true }  // 👈 guest name and avatar per booking
+            }
+          }
+        }
+      }
     });
 
     if (!listing) {
@@ -31,21 +42,25 @@ export const getListingById = async (req: Request, res: Response) => {
 
     res.json(listing);
   } catch (error) {
-    res.status(500).json({ message: "Something went wrong" });
+    next(error);
   }
 };
 
 // POST /listings
-export const createListing = async (req: Request, res: Response) => {
+export const createListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { title, description, location, pricePerNight, guests, type, amenities, hostId } = req.body;
-
-    if (!title || !description || !location || !pricePerNight || !guests || !type || !amenities || !hostId) {
-      res.status(400).json({ message: "Missing required fields" });
+    const result = createListingSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ errors: result.error.errors });
       return;
     }
 
-    // verify host exists
+    const hostId = req.body.hostId;
+    if (!hostId) {
+      res.status(400).json({ message: "hostId is required" });
+      return;
+    }
+
     const host = await prisma.user.findFirst({ where: { id: hostId } });
     if (!host) {
       res.status(404).json({ message: "Host not found" });
@@ -53,19 +68,25 @@ export const createListing = async (req: Request, res: Response) => {
     }
 
     const newListing = await prisma.listing.create({
-      data: { title, description, location, pricePerNight, guests, type, amenities, hostId }
+      data: { ...result.data, hostId }
     });
 
     res.status(201).json(newListing);
   } catch (error) {
-    res.status(500).json({ message: "Something went wrong" });
+    next(error);
   }
 };
 
 // PUT /listings/:id
-export const updateListing = async (req: Request, res: Response) => {
+export const updateListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.id);
+
+    const result = updateListingSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ errors: result.error.errors });
+      return;
+    }
 
     const existing = await prisma.listing.findFirst({ where: { id } });
     if (!existing) {
@@ -75,17 +96,17 @@ export const updateListing = async (req: Request, res: Response) => {
 
     const updated = await prisma.listing.update({
       where: { id },
-      data: req.body
+      data: result.data
     });
 
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ message: "Something went wrong" });
+    next(error);
   }
 };
 
 // DELETE /listings/:id
-export const deleteListing = async (req: Request, res: Response) => {
+export const deleteListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.id);
 
@@ -98,6 +119,6 @@ export const deleteListing = async (req: Request, res: Response) => {
     await prisma.listing.delete({ where: { id } });
     res.json({ message: "Listing deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Something went wrong" });
+    next(error);
   }
 };
