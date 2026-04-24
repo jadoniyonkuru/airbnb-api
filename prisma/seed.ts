@@ -33,6 +33,7 @@ async function main() {
       username: "johnhost",
       phone: "0788000111",
       role: "HOST",
+      password: hashedPassword,
     }
   });
 
@@ -43,6 +44,7 @@ async function main() {
       username: "alicehost",
       phone: "0788000222",
       role: "HOST",
+      password: hashedPassword,
     }
   });
 
@@ -53,6 +55,7 @@ async function main() {
       username: "bobguest",
       phone: "0788000333",
       role: "GUEST",
+      password: hashedPassword,
     }
   });
 
@@ -63,6 +66,7 @@ async function main() {
       username: "janeguest",
       phone: "0788000444",
       role: "GUEST",
+      password: hashedPassword,
     }
   });
 
@@ -73,6 +77,7 @@ async function main() {
       username: "mikeguest",
       phone: "0788000555",
       role: "GUEST",
+      password: hashedPassword,
     }
   });
 
