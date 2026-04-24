@@ -4,10 +4,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-// Enums
 enum Role {
   HOST
   GUEST
@@ -26,7 +24,6 @@ enum BookingStatus {
   CANCELLED
 }
 
-// Models
 model User {
   id        Int       @id @default(autoincrement())
   name      String
@@ -39,7 +36,7 @@ model User {
   createdAt DateTime  @default(now())
   listings  Listing[]
   bookings  Booking[]
-  profile   Profile? // 👈 one-to-one relation
+  profile   Profile?
 }
 
 model Profile {
@@ -48,7 +45,7 @@ model Profile {
   website String?
   country String?
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId  Int     @unique // 👈 @unique enforces one-to-one
+  userId  Int     @unique
 }
 
 model Listing {

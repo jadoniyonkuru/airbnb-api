@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 
 const pool = new Pool({
@@ -8,7 +8,7 @@ const pool = new Pool({
 });
 
 const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({ adapter } as any);
 
 export const connectDB = async () => {
   await prisma.$connect();

@@ -29,7 +29,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    // 👇 return different data based on role
+    // return different data based on role
     if (user.role === "HOST") {
       const hostWithListings = await prisma.user.findUnique({
         where: { id },
