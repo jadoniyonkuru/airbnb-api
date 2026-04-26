@@ -4,7 +4,8 @@ import jwt from "jsonwebtoken";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth.middleware";
 import crypto from "crypto";
-
+import { sendEmail } from "../config/email.js";
+import { welcomeEmail } from "../templates/emails";
 const JWT_SECRET = process.env["JWT_SECRET"] as string;
 
 // POST /auth/register
@@ -12,22 +13,40 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
   try {
     const { name, email, username, password, phone, role } = req.body;
 
+    // validate required fields
     if (!name || !email || !username || !password || !phone) {
-      res.status(400).json({ message: "name, email, username, password and phone are required" });
+      res.status(400).json({ message: "All fields are required" });
       return;
     }
 
-    const existingUser = await prisma.user.findFirst({
-      where: { OR: [{ email }, { username }] }
+    // validate password length
+    if (password.length < 8) {
+      res.status(400).json({ message: "Password must be at least 8 characters" });
+      return;
+    }
+
+    // never allow ADMIN role
+    if (role === "ADMIN") {
+      res.status(403).json({ message: "Cannot assign ADMIN role" });
+      return;
+    }
+
+    // check email or username already taken
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { username }]
+      }
     });
 
-    if (existingUser) {
-      res.status(409).json({ message: "User with this email or username already exists" });
+    if (existing) {
+      res.status(409).json({ message: "Email or username already taken" });
       return;
     }
 
+    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // create user
     const user = await prisma.user.create({
       data: {
         name,
@@ -35,12 +54,28 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         username,
         phone,
         password: hashedPassword,
-        role: (role || "GUEST") as "ADMIN" | "HOST" | "GUEST"
+        role: role ?? "GUEST",
       }
     });
 
+    // remove password from response
     const { password: _, ...userWithoutPassword } = user;
+
+    // send welcome email here — after user created, before response
+    try {
+      await sendEmail(
+        email,
+        "Welcome to Airbnb!",
+        welcomeEmail(name, role ?? "GUEST")
+      );
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
+      // registration still succeeds even if email fails
+    }
+
+    // response sent after email attempt
     res.status(201).json(userWithoutPassword);
+
   } catch (error) {
     next(error);
   }
@@ -136,14 +171,12 @@ export const changePassword = async (req: AuthRequest, res: Response, next: Next
       res.status(400).json({ message: "currentPassword and newPassword are required" });
       return;
     }
-
     const user = await prisma.user.findUnique({ where: { id: req.userId! } });
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
     }
-
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       res.status(401).json({ message: "Current password is incorrect" });
       return;
@@ -217,7 +250,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
 // POST /auth/reset-password/:token
 export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rawToken = req.params["token"];
+    const rawToken = req.params["token"] as string;
     const { newPassword } = req.body;
 
     // hash the raw token to compare with stored hash
