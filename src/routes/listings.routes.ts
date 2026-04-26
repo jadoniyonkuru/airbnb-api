@@ -14,8 +14,8 @@ const router = Router();
 
 router.get("/", getAllListings);
 router.get("/:id", getListingById);
-router.post("/", authenticate, requireHost, validate(createListingSchema), createListing);    // 👈 protected
-router.put("/:id", authenticate, requireHost, validate(updateListingSchema), updateListing); // 👈 protected
-router.delete("/:id", authenticate, requireHost, deleteListing);                             // 👈 protected
+router.post("/", authenticate, requireHost, validate(createListingSchema), createListing);
+router.put("/:id", authenticate, requireHost, validate(updateListingSchema), updateListing);
+router.delete("/:id", authenticate, requireHost, deleteListing);
 
 export default router;
