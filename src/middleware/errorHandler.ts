@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
+import multer from "multer";
 
 export function errorHandler(
   err: unknown,
@@ -8,8 +9,23 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  // log error to terminal so we can see it
-  console.error("ERROR:", err);
+  // handle Multer file size error
+  if (err instanceof multer.MulterError) {
+    console.log(`[Error Handler] Multer error:`, err.code);
+    if (err.code === "LIMIT_FILE_SIZE") {
+      res.status(400).json({ message: "File too large. Maximum size is 5MB" });
+      return;
+    }
+    res.status(400).json({ message: err.message });
+    return;
+  }
+
+  // handle file filter errors — wrong file type
+  if (err instanceof Error && err.message.includes("Invalid file type")) {
+    console.log(`[Error Handler] File type error:`, err.message);
+    res.status(400).json({ message: err.message });
+    return;
+  }
 
   // Zod validation errors
   if (err instanceof ZodError) {
@@ -35,5 +51,6 @@ export function errorHandler(
     }
   }
 
+  console.error(err);
   res.status(500).json({ error: "Something went wrong" });
 }

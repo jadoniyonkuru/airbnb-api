@@ -13,8 +13,16 @@ export async function uploadAvatar(req: Request, res: Response) {
 
   // req.file is set by Multer — if it's missing, no file was sent
   if (!req.file) {
+    console.log(`[Upload Debug] No file received in uploadAvatar`);
     return res.status(400).json({ error: "No file uploaded" });
   }
+
+  console.log(`[Upload Debug] uploadAvatar - File received:`, {
+    userId: id,
+    filename: req.file.originalname,
+    mimetype: req.file.mimetype,
+    size: req.file.size
+  });
 
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) {
@@ -71,9 +79,21 @@ export const uploadListingPhotos = async (req: AuthRequest, res: Response, next:
   try {
     const id = parseInt(req.params.id as string);
     if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
+      console.log(`[Upload Debug] No files received in uploadListingPhotos for listing ${id}`);
       res.status(400).json({ message: "No files uploaded" });
       return;
     }
+
+    const files = req.files as Express.Multer.File[];
+    console.log(`[Upload Debug] uploadListingPhotos - Files received:`, {
+      listingId: id,
+      fileCount: files.length,
+      files: files.map(f => ({
+        name: f.originalname,
+        mimetype: f.mimetype,
+        size: f.size
+      }))
+    });
 
     // check listing exists
     const listing = await prisma.listing.findUnique({ where: { id } });
@@ -90,7 +110,6 @@ export const uploadListingPhotos = async (req: AuthRequest, res: Response, next:
 
     // check max 5 photos
     const existingPhotos = await prisma.listingPhoto.count({ where: { listingId: id } });
-    const files = req.files as Express.Multer.File[];
 
     if (existingPhotos + files.length > 5) {
       res.status(400).json({
