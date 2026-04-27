@@ -1,13 +1,21 @@
 import { Router } from "express";
-import upload from "../config/multer.js";
-import { uploadAvatar } from "../controllers/upload.controller.js";
-import { authenticate } from "../middleware/auth.middleware.js";
+import upload from "../config/multer";
+import {
+  uploadAvatar,
+  deleteAvatar,
+  uploadListingPhotos,
+  deleteListingPhoto
+} from "../controllers/upload.controller";
+import { authenticate } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// upload.single("image") — Multer middleware runs first
-// "image" must match the field name in the multipart form
-// authenticate — user must be logged in to upload
-router.post("/:id/avatar", authenticate, upload.single("image"), uploadAvatar);
+// avatar routes
+router.post("/users/:id/avatar", authenticate, upload.single("image"), uploadAvatar);
+router.delete("/users/:id/avatar", authenticate, deleteAvatar);
+
+// listing photo routes
+router.post("/listings/:id/photos", authenticate, upload.array("images", 5), uploadListingPhotos);
+router.delete("/listings/:id/photos/:photoId", authenticate, deleteListingPhoto);
 
 export default router;

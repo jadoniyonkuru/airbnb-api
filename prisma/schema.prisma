@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -26,22 +27,23 @@ enum BookingStatus {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  username  String    @unique
-  phone     String
-  role      Role      @default(GUEST)
-  password  String
-  updatedAt DateTime  @updatedAt
-  resetToken String?
+  id               Int       @id @default(autoincrement())
+  name             String
+  email            String    @unique
+  username         String    @unique
+  phone            String
+  role             Role      @default(GUEST)
+  password         String
+  updatedAt        DateTime  @updatedAt
+  resetToken       String?
   resetTokenExpiry DateTime?
-  avatar    String?
-  bio       String?
-  createdAt DateTime  @default(now())
-  listings  Listing[]
-  bookings  Booking[]
-  profile   Profile?
+  avatar           String?
+  avatarPublicId   String?
+  bio              String?
+  createdAt        DateTime  @default(now())
+  listings         Listing[]
+  bookings         Booking[]
+  profile          Profile?
 }
 
 model Profile {
@@ -54,7 +56,7 @@ model Profile {
 }
 
 model Listing {
-  id            Int         @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
   title         String
   description   String
   location      String
@@ -63,11 +65,12 @@ model Listing {
   type          ListingType
   amenities     String[]
   rating        Float?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  host          User        @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  host          User           @relation(fields: [hostId], references: [id], onDelete: Cascade)
   hostId        Int
   bookings      Booking[]
+  photos        ListingPhoto[]
 }
 
 model Booking {
@@ -81,4 +84,13 @@ model Booking {
   guestId    Int
   listing    Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
   listingId  Int
+}
+
+model ListingPhoto {
+  id        Int      @id @default(autoincrement())
+  url       String
+  publicId  String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId Int
+  createdAt DateTime @default(now())
 }

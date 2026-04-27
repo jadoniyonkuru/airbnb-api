@@ -5,7 +5,7 @@ import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth.middleware";
 import crypto from "crypto";
 import { sendEmail } from "../config/email.js";
-import { welcomeEmail } from "../templates/emails";
+import { welcomeEmail, passwordResetEmail } from "../templates/emails";
 const JWT_SECRET = process.env["JWT_SECRET"] as string;
 
 // POST /auth/register
@@ -236,10 +236,17 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
       }
     });
 
-    // in production this would send an email
-    // for now we log the reset link to terminal
+    // send password reset email
     const resetLink = `http://localhost:3000/auth/reset-password/${rawToken}`;
-    console.log("🔗 Reset link:", resetLink);
+    try {
+      await sendEmail(
+        email,
+        "Password Reset Request",
+        passwordResetEmail(user.name, resetLink)
+      );
+    } catch (emailError) {
+      console.error("Failed to send reset email:", emailError);
+    }
 
     res.json({ message: successMessage });
   } catch (error) {

@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { createBookingSchema } from "../validators/bookings.validator";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { sendEmail } from "../config/email";
+import { bookingConfirmationEmail, bookingCancellationEmail } from "../templates/emails";
+
 
 // GET /bookings
 export const getAllBookings = async (req: Request, res: Response, next: NextFunction) => {
@@ -116,6 +119,24 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       }
     });
 
+    try {
+      const guest = await prisma.user.findUnique({ where: { id: guestId } });
+      await sendEmail(
+        guest!.email,
+        "Booking Confirmed!",
+        bookingConfirmationEmail(
+          guest!.name,
+          listing.title,
+          listing.location,
+          checkInDate.toDateString(),
+          checkOutDate.toDateString(),
+          totalPrice
+        )
+      );
+    } catch (emailError) {
+      console.error("Failed to send booking confirmation email:", emailError);
+    }
+
     res.status(201).json(newBooking);
   } catch (error) {
     next(error);
@@ -150,7 +171,23 @@ export const deleteBooking = async (req: AuthRequest, res: Response, next: NextF
       where: { id },
       data: { status: "CANCELLED" }
     });
-
+// send booking cancellation email
+try {
+  const guest = await prisma.user.findUnique({ where: { id: booking.guestId } });
+  const listing = await prisma.listing.findUnique({ where: { id: booking.listingId } });
+  await sendEmail(
+    guest!.email,
+    "Booking Cancelled",
+    bookingCancellationEmail(
+      guest!.name,
+      listing!.title,
+      booking.checkIn.toDateString(),
+      booking.checkOut.toDateString()
+    )
+  );
+} catch (emailError) {
+  console.error("Failed to send cancellation email:", emailError);
+}
     res.json({ message: "Booking cancelled successfully", booking: updated });
   } catch (error) {
     next(error);
