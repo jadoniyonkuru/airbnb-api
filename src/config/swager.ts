@@ -1,0 +1,122 @@
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import { Express } from "express";
+
+const options: swaggerJsdoc.Options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Airbnb API",
+      version: "1.0.0",
+      description:
+        "A simplified Airbnb-like REST API with authentication, listings, bookings, and file uploads.",
+    },
+    servers: [
+      {
+        url: "http://localhost:3000",
+        description: "Development server",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+      schemas: {
+        RegisterInput: {
+          type: "object",
+          required: ["email", "password", "username"],
+          properties: {
+            email: {
+              type: "string",
+              example: "john@example.com",
+            },
+            password: {
+              type: "string",
+              example: "password123",
+            },
+            username: {
+              type: "string",
+              example: "john_doe",
+            },
+          },
+        },
+        LoginInput: {
+          type: "object",
+          required: ["email", "password"],
+          properties: {
+            email: {
+              type: "string",
+              example: "john@example.com",
+            },
+            password: {
+              type: "string",
+              example: "password123",
+            },
+          },
+        },
+        User: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              example: "user-123",
+            },
+            email: {
+              type: "string",
+              example: "john@example.com",
+            },
+            username: {
+              type: "string",
+              example: "john_doe",
+            },
+            profile: {
+              type: "object",
+              properties: {
+                firstName: { type: "string" },
+                lastName: { type: "string" },
+                bio: { type: "string" },
+                avatar: { type: "string" },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+            },
+          },
+        },
+        AuthResponse: {
+          type: "object",
+          properties: {
+            token: {
+              type: "string",
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            },
+            user: {
+              $ref: "#/components/schemas/User",
+            },
+          },
+        },
+      },
+    },
+  },
+  // swagger-jsdoc scans these files for @swagger comments
+  apis: ["./src/routes/*.ts"],
+};
+
+const swaggerSpec = swaggerJsdoc(options);
+export function setupSwagger(app: Express): void {
+  // serve swagger UI at /api-docs
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+  // expose raw JSON spec at /api-docs.json
+  app.get("/api-docs.json", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
+  });
+
+  console.log(" Swagger docs available at http://localhost:3000/api-docs");
+}
