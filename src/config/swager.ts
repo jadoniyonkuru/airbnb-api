@@ -100,6 +100,155 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        Booking: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            listingId: {
+              type: "string",
+              example: "listing-123",
+            },
+            userId: {
+              type: "string",
+              example: "user-456",
+            },
+            checkInDate: {
+              type: "string",
+              format: "date",
+              example: "2026-05-01",
+            },
+            checkOutDate: {
+              type: "string",
+              format: "date",
+              example: "2026-05-05",
+            },
+            totalPrice: {
+              type: "number",
+              example: 500,
+            },
+            status: {
+              type: "string",
+              enum: ["pending", "confirmed", "cancelled"],
+              example: "confirmed",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+            },
+          },
+        },
+        CreateBookingInput: {
+          type: "object",
+          required: ["listingId", "checkInDate", "checkOutDate"],
+          properties: {
+            listingId: {
+              type: "string",
+              example: "listing-123",
+            },
+            checkInDate: {
+              type: "string",
+              format: "date",
+              example: "2026-05-01",
+            },
+            checkOutDate: {
+              type: "string",
+              format: "date",
+              example: "2026-05-05",
+            },
+          },
+        },
+        ErrorResponse: {
+          type: "object",
+          properties: {
+            message: {
+              type: "string",
+              example: "Error message",
+            },
+            error: {
+              type: "string",
+            },
+          },
+        },
+        Listing: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              example: "listing-123",
+            },
+            title: {
+              type: "string",
+              example: "Beautiful apartment in downtown",
+            },
+            description: {
+              type: "string",
+              example: "A cozy and spacious apartment",
+            },
+            price: {
+              type: "number",
+              example: 100,
+            },
+            location: {
+              type: "string",
+              example: "New York, NY",
+            },
+            amenities: {
+              type: "array",
+              items: { type: "string" },
+              example: ["WiFi", "Kitchen", "Gym"],
+            },
+            images: {
+              type: "array",
+              items: { type: "string" },
+            },
+            hostId: {
+              type: "string",
+              example: "user-123",
+            },
+            maxGuests: {
+              type: "integer",
+              example: 4,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+            },
+          },
+        },
+        CreateListingInput: {
+          type: "object",
+          required: ["title", "description", "price", "location", "maxGuests"],
+          properties: {
+            title: {
+              type: "string",
+              example: "Beautiful apartment in downtown",
+            },
+            description: {
+              type: "string",
+              example: "A cozy and spacious apartment",
+            },
+            price: {
+              type: "number",
+              example: 100,
+            },
+            location: {
+              type: "string",
+              example: "New York, NY",
+            },
+            amenities: {
+              type: "array",
+              items: { type: "string" },
+              example: ["WiFi", "Kitchen", "Gym"],
+            },
+            maxGuests: {
+              type: "integer",
+              example: 4,
+            },
+          },
+        },
       },
     },
   },
