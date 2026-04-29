@@ -1,8 +1,79 @@
 import { Request, Response, NextFunction } from "express";
-import { AuthRequest } from "../types/auth.types";
 import prisma from "../config/prisma";
 import { createListingSchema, updateListingSchema } from "../validators/listings.validator";
+import { AuthRequest } from "../middleware/auth.middleware";
+import { getCache, setCache, deleteCache } from "../config/cache";
 
+// GET /listings
+export const getAllListings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    //check cache first
+    const cacheKey = "listings:all";
+    const cached = getCache(cacheKey);
+    if (cached) {
+      console.log("Returning cached listings");
+      res.json(cached);
+      return;
+    }
+
+    const listings = await prisma.listing.findMany({
+      include: {
+        host: { select: { name: true, avatar: true } },
+        _count: { select: { bookings: true, reviews: true } }
+      }
+    });
+
+    //cache for 60 seconds
+    setCache(cacheKey, listings, 60);
+
+    res.json(listings);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /listings/:id
+export const getListingById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    //fix — use bracket notation and validate
+    const id = parseInt(req.params["id"] as string);
+
+    if (isNaN(id)) {
+      res.status(400).json({ message: "Invalid listing ID" });
+      return;
+    }
+
+    const listing = await prisma.listing.findUnique({
+      where: { id },
+      include: {
+        host: true,
+        bookings: {
+          include: {
+            guest: {
+              select: { name: true, avatar: true }
+            }
+          }
+        },
+        reviews: {
+          include: {
+            user: { select: { name: true, avatar: true } }
+          }
+        }
+      }
+    });
+
+    if (!listing) {
+      res.status(404).json({ message: "Listing not found" });
+      return;
+    }
+
+    res.json(listing);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /listings
 export const createListing = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const result = createListingSchema.safeParse(req.body);
@@ -11,28 +82,30 @@ export const createListing = async (req: AuthRequest, res: Response, next: NextF
       return;
     }
 
+    //use hostId from token — never from request body
     const hostId = req.userId!;
 
-    const listing = await prisma.listing.create({
-      data: {
-        ...result.data,
-        hostId
-      },
-      include: { host: true }
+    const newListing = await prisma.listing.create({
+      data: { ...result.data, hostId }
     });
 
-    res.status(201).json(listing);
+    // clear cache when new listing is created
+    deleteCache("listings:all");
+    deleteCache("stats:listings");
+
+    res.status(201).json(newListing);
   } catch (error) {
     next(error);
   }
 };
 
-//creating a listing function and updating a listing function
+// PUT /listings/:id
 export const updateListing = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const listingId = parseInt(req.params.id);
-    if (isNaN(listingId)) {
-      res.status(400).json({ error: "Invalid listing ID" });
+    const id = parseInt(req.params["id"] as string);
+
+    if (isNaN(id)) {
+      res.status(400).json({ message: "Invalid listing ID" });
       return;
     }
 
@@ -42,151 +115,128 @@ export const updateListing = async (req: AuthRequest, res: Response, next: NextF
       return;
     }
 
-    // use req.userId — never from request body
-    const hostId = req.userId!;
-
-    // Ensure the listing belongs to the host
-    const existingListing = await prisma.listing.findUnique({
-      where: { id: listingId }
-    });
-
-    if (!existingListing) {
-      res.status(404).json({ error: "Listing not found" });
+    const existing = await prisma.listing.findFirst({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ message: "Listing not found" });
       return;
     }
 
-    if (existingListing.host  !== hostId) {
-      res.status(403).json({ error: "You do not have permission to update this listing" });
+    //ownership check — ADMIN bypasses
+    if (existing.hostId !== req.userId && req.role !== "ADMIN") {
+      res.status(403).json({ message: "You can only edit your own listings" });
       return;
     }
 
-    const updatedListing = await prisma.listing.update({
-      where: { id: listingId },
+    const updated = await prisma.listing.update({
+      where: { id },
       data: result.data
     });
 
-    res.json(updatedListing);
+    // clear cache when listing is updated
+    deleteCache("listings:all");
+    deleteCache("stats:listings");
+
+    res.json(updated);
   } catch (error) {
     next(error);
-  }       
+  }
 };
 
+// DELETE /listings/:id
 export const deleteListing = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const listingId = parseInt(req.params.id);
-    if (isNaN(listingId)) {
-      res.status(400).json({ error: "Invalid listing ID" });
+    const id = parseInt(req.params["id"] as string);
+
+    if (isNaN(id)) {
+      res.status(400).json({ message: "Invalid listing ID" });
       return;
     }
 
-    // use req.userId — never from request body
-    const hostId = req.userId!;
-
-    // Ensure the listing belongs to the host
-    const existingListing = await prisma.listing.findUnique({
-      where: { id: listingId }
-    });
-
-    if (!existingListing) {
-      res.status(404).json({ error: "Listing not found" });
+    const existing = await prisma.listing.findFirst({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ message: "Listing not found" });
       return;
     }
 
-    if (existingListing.host !== hostId) {
-      res.status(403).json({ error: "You do not have permission to delete this listing" });
+    //ownership check — ADMIN bypasses
+    if (existing.hostId !== req.userId && req.role !== "ADMIN") {
+      res.status(403).json({ message: "You can only delete your own listings" });
       return;
     }
 
-    await prisma.listing.delete({
-      where: { id: listingId }
-    });
+    await prisma.listing.delete({ where: { id } });
 
-    res.status(204).send();
-  } catch (error) {
-    next(error);
-  }
-};  
-export const getAllListings = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const listings = await prisma.listing.findMany({
-      include: { host: true }
-    });
-    res.json(listings);
+    // clear cache when listing is deleted
+    deleteCache("listings:all");
+    deleteCache("stats:listings");
+
+    res.json({ message: "Listing deleted successfully" });
   } catch (error) {
     next(error);
   }
 };
-export const getListingById = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const listingId = parseInt(req.params.id);
-    if (isNaN(listingId)) {
-      res.status(400).json({ error: "Invalid listing ID" });
-      return;
-    }
 
-    const listing = await prisma.listing.findUnique({
-      where: { id: listingId },
-      include: { host: true }
-    });
-
-    if (!listing) {
-      res.status(404).json({ error: "Listing not found" });
-      return;
-    }
-
-    res.json(listing);
-  } catch (error) {
-    next(error);
-  }
-};
-export const getUserListings = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const hostId = req.userId!;
-
-    const listings = await prisma.listing.findMany({
-      where: { hostId },
-      include: { host: true }
-    });
-
-    res.json(listings);
-  } catch (error) {
-    next(error);
-  }
-};
+// GET /listings/search
 export const searchListings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { location, checkIn, checkOut, guests } = req.query;
+    // cast each param to string explicitly
+    const location = req.query.location as string | undefined;
+    const type = req.query.type as string | undefined;
+    const minPrice = req.query.minPrice as string | undefined;
+    const maxPrice = req.query.maxPrice as string | undefined;
+    const guests = req.query.guests as string | undefined;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
 
-    const whereClause: any = {};
+    // build where clause dynamically
+    const where: any = {};
 
     if (location) {
-      whereClause.location = {
-        contains: location as string,
-        mode: 'insensitive'
+      where.location = {
+        contains: location,
+        mode: "insensitive"  // case insensitive
       };
     }
 
-    if (checkIn || checkOut) {
-      whereClause.reservations = {
-        some: {
-          checkIn: { lt: checkOut as string },
-          checkOut: { gt: checkIn as string }
-        }
-      };
+    if (type) {
+      where.type = type;
+    }
+
+    if (minPrice || maxPrice) {
+      where.pricePerNight = {};
+      if (minPrice) where.pricePerNight.gte = parseFloat(minPrice);
+      if (maxPrice) where.pricePerNight.lte = parseFloat(maxPrice);
     }
 
     if (guests) {
-      whereClause.guestLimit = {
-        gte: parseInt(guests as string)
-      };
+      where.guests = { gte: parseInt(guests) };
     }
 
-    const listings = await prisma.listing.findMany({
-      where: whereClause,
-      include: { host: true }
-    });
+    // Promise.all — parallel queries
+    const [listings, total] = await Promise.all([
+      prisma.listing.findMany({
+        where,
+        include: {
+          host: { select: { name: true, avatar: true } },
+          _count: { select: { bookings: true, reviews: true } }
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" }
+      }),
+      prisma.listing.count({ where })
+    ]);
 
-    res.json(listings);
+    res.json({
+      data: listings,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     next(error);
   }

@@ -271,10 +271,13 @@ import {
 } from "../controllers/users.controller";
 import { validate } from "../middleware/validate";
 import { createUserSchema, updateUserSchema } from "../validators/users.validator";
+import { authenticate } from "../middleware/auth.middleware";
+import { getUsersStats } from "../controllers/stats.controller";
 
 const router = Router();
 
-// user routes
+// 👇 stats must come before /:id
+router.get("/stats", getUsersStats);
 router.get("/", getAllUsers);
 router.get("/:id", getUserById);
 router.post("/", validate(createUserSchema), createUser);
@@ -283,7 +286,7 @@ router.delete("/:id", deleteUser);
 
 // profile routes
 router.get("/:id/profile", getUserProfile);
-router.post("/:id/profile", createUserProfile);
-router.put("/:id/profile", updateUserProfile);
+router.post("/:id/profile", authenticate, createUserProfile);
+router.put("/:id/profile", authenticate, updateUserProfile);
 
 export default router;

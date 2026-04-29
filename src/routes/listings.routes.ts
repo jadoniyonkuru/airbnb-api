@@ -197,17 +197,23 @@ import {
   getListingById,
   createListing,
   updateListing,
-  deleteListing
+  deleteListing,
+  searchListings,
 } from "../controllers/listings.controller";
 import { validate } from "../middleware/validate";
 import { createListingSchema, updateListingSchema } from "../validators/listings.validator";
 import { authenticate, requireHost } from "../middleware/auth.middleware";
+import { strictLimiter } from "../middleware/rateLimiter";
+import { getListingsStats } from "../controllers/stats.controller";
 
 const router = Router();
 
+// 👇 specific routes MUST come before /:id
+router.get("/search", searchListings);
+router.get("/stats", getListingsStats);
 router.get("/", getAllListings);
 router.get("/:id", getListingById);
-router.post("/", authenticate, requireHost, validate(createListingSchema), createListing);
+router.post("/", authenticate, requireHost, strictLimiter, validate(createListingSchema), createListing);
 router.put("/:id", authenticate, requireHost, validate(updateListingSchema), updateListing);
 router.delete("/:id", authenticate, requireHost, deleteListing);
 

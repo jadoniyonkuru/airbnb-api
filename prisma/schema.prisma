@@ -33,16 +33,19 @@ model User {
   phone            String
   role             Role      @default(GUEST)
   password         String
+  avatar           String?
+  bio              String?
+  createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   resetToken       String?
   resetTokenExpiry DateTime?
-  avatar           String?
-  avatarPublicId   String?
-  bio              String?
-  createdAt        DateTime  @default(now())
   listings         Listing[]
   bookings         Booking[]
+  reviews          Review[]
   profile          Profile?
+
+  @@index([name])
+  @@index([role])
 }
 
 model Profile {
@@ -69,7 +72,22 @@ model Listing {
   host          User           @relation(fields: [hostId], references: [id], onDelete: Cascade)
   hostId        Int
   bookings      Booking[]
+  reviews       Review[]
   photos        ListingPhoto[]
+
+  @@index([hostId])
+  @@index([location])
+  @@index([type])
+  @@index([pricePerNight])
+}
+
+model ListingPhoto {
+  id        Int      @id @default(autoincrement())
+  url       String
+  publicId  String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId Int
+  createdAt DateTime @default(now())
 }
 
 model Booking {
@@ -83,13 +101,22 @@ model Booking {
   guestId    Int
   listing    Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
   listingId  Int
+
+  @@index([guestId])
+  @@index([listingId])
+  @@index([status])
 }
 
-model ListingPhoto {
+model Review {
   id        Int      @id @default(autoincrement())
-  url       String
-  publicId  String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
   listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
   listingId Int
-  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([listingId])
 }
