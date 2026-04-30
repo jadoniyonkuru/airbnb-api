@@ -29,7 +29,7 @@ export function errorHandler(
 
   // Zod validation errors
   if (err instanceof ZodError) {
-    res.status(400).json({ errors: err.errors });
+    res.status(400).json({ errors: err.issues });
     return;
   }
 
