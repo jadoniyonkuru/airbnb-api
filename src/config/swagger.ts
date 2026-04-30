@@ -1,9 +1,9 @@
-import swaggerJsdoc from "swagger-jsdoc";
+import swaggerJsdoc, { Options } from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { Express } from "express";
 import path from "path";
 
-const options: swaggerJsdoc.Options = {
+const options: Options = {
   definition: {
     openapi: "3.0.0",
     info: {
@@ -12,18 +12,12 @@ const options: swaggerJsdoc.Options = {
       description: "A simplified Airbnb-like REST API with authentication, listings, bookings, and file uploads.",
     },
     servers: [
-      {
-        url: "http://localhost:3000/api/v1",
-        description: "Development server"
-      }
+      { url: "http://localhost:3000/api/v1", description: "Development server" },
+      { url: `${process.env["API_URL"]}/api/v1`, description: "Production server" }
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-        }
+        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" }
       },
       schemas: {
         RegisterInput: {
@@ -129,18 +123,16 @@ const options: swaggerJsdoc.Options = {
       }
     }
   },
-  apis: [path.join(__dirname, "../routes/**/*.ts"), path.join(__dirname, "../routes/**/*.js")],
+  apis: [path.join(__dirname, "../routes/**/*.ts"), path.join(__dirname, "../routes/**/*.js")]
 };
 
 const swaggerSpec = swaggerJsdoc(options);
 
 export function setupSwagger(app: Express): void {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
   app.get("/api-docs.json", (req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.send(swaggerSpec);
   });
-
   console.log("Swagger docs available at http://localhost:3000/api-docs");
 }
