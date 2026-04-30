@@ -1,5 +1,4 @@
 import type { Request, Response, NextFunction } from "express";
-import { Prisma } from "@prisma/client/runtime/library";
 import { ZodError } from "zod";
 import multer from "multer";
 
@@ -34,10 +33,11 @@ export function errorHandler(
   }
 
   // Prisma known errors
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    switch (err.code) {
+  if (err instanceof Error && (err as any).code?.startsWith("P")) {
+    const prismaErr = err as any;
+    switch (prismaErr.code) {
       case "P2002":
-        res.status(409).json({ error: `${err.meta?.target} already exists` });
+        res.status(409).json({ error: `${prismaErr.meta?.target} already exists` });
         return;
       case "P2025":
         res.status(404).json({ error: "Record not found" });
