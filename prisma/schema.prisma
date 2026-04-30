@@ -4,10 +4,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+// Enums
 enum Role {
-  ADMIN
   HOST
   GUEST
 }
@@ -25,40 +26,23 @@ enum BookingStatus {
   CANCELLED
 }
 
+// Models
 model User {
-  id               Int       @id @default(autoincrement())
-  name             String
-  email            String    @unique
-  username         String    @unique
-  phone            String
-  role             Role      @default(GUEST)
-  password         String
-  avatar           String?
-  bio              String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  resetToken       String?
-  resetTokenExpiry DateTime?
-  listings         Listing[]
-  bookings         Booking[]
-  reviews          Review[]
-  profile          Profile?
-
-  @@index([name])
-  @@index([role])
-}
-
-model Profile {
-  id      Int     @id @default(autoincrement())
-  bio     String?
-  website String?
-  country String?
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId  Int     @unique
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  username  String    @unique
+  phone     String
+  role      Role      @default(GUEST)
+  avatar    String?
+  bio       String?
+  createdAt DateTime  @default(now())
+  listings  Listing[]
+  bookings  Booking[]
 }
 
 model Listing {
-  id            Int            @id @default(autoincrement())
+  id            Int         @id @default(autoincrement())
   title         String
   description   String
   location      String
@@ -67,27 +51,11 @@ model Listing {
   type          ListingType
   amenities     String[]
   rating        Float?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  host          User           @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  host          User        @relation(fields: [hostId], references: [id], onDelete: Cascade)
   hostId        Int
   bookings      Booking[]
-  reviews       Review[]
-  photos        ListingPhoto[]
-
-  @@index([hostId])
-  @@index([location])
-  @@index([type])
-  @@index([pricePerNight])
-}
-
-model ListingPhoto {
-  id        Int      @id @default(autoincrement())
-  url       String
-  publicId  String
-  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  listingId Int
-  createdAt DateTime @default(now())
 }
 
 model Booking {
@@ -101,22 +69,4 @@ model Booking {
   guestId    Int
   listing    Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
   listingId  Int
-
-  @@index([guestId])
-  @@index([listingId])
-  @@index([status])
-}
-
-model Review {
-  id        Int      @id @default(autoincrement())
-  rating    Int
-  comment   String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int
-  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  listingId Int
-
-  @@index([userId])
-  @@index([listingId])
 }

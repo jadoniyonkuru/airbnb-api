@@ -116,10 +116,10 @@ import {
   getBookingById,
   createBooking,
   deleteBooking
-} from "../controllers/bookings.controller";
-import { validate } from "../middleware/validate";
-import { createBookingSchema } from "../validators/bookings.validator";
-import { authenticate, requireGuest } from "../middleware/auth.middleware";
+} from "../../controllers/bookings.controller";
+import { validate } from "../../middleware/validate";
+import { createBookingSchema } from "../../validators/bookings.validator";
+import { authenticate, requireGuest } from "../../middleware/auth.middleware";
 
 const router = Router();
 

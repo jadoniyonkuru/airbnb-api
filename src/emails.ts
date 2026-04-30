@@ -28,3 +28,33 @@ export function passwordResetEmail(name: string, resetLink: string): string {
     </div>
   `;
 }
+
+export function bookingConfirmationEmail(name: string, listingTitle: string, location: string, checkIn: string, checkOut: string, totalPrice: number): string {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #FF5A5F;">Booking Confirmed!</h1>
+      <p>Hi ${name}, your booking has been confirmed.</p>
+      <ul>
+        <li><strong>Listing:</strong> ${listingTitle}</li>
+        <li><strong>Location:</strong> ${location}</li>
+        <li><strong>Check-in:</strong> ${checkIn}</li>
+        <li><strong>Check-out:</strong> ${checkOut}</li>
+        <li><strong>Total:</strong> $${totalPrice}</li>
+      </ul>
+    </div>
+  `;
+}
+
+export function bookingCancellationEmail(name: string, listingTitle: string, checkIn: string, checkOut: string): string {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1>Booking Cancelled</h1>
+      <p>Hi ${name}, your booking has been cancelled.</p>
+      <ul>
+        <li><strong>Listing:</strong> ${listingTitle}</li>
+        <li><strong>Check-in:</strong> ${checkIn}</li>
+        <li><strong>Check-out:</strong> ${checkOut}</li>
+      </ul>
+    </div>
+  `;
+}

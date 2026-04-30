@@ -7,23 +7,30 @@ import { getCache, setCache, deleteCache } from "../config/cache";
 // GET /listings
 export const getAllListings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    //check cache first
     const cacheKey = "listings:all";
     const cached = getCache(cacheKey);
     if (cached) {
-      console.log("Returning cached listings");
+      console.log("📦 Returning cached listings");
       res.json(cached);
       return;
     }
 
     const listings = await prisma.listing.findMany({
       include: {
-        host: { select: { name: true, avatar: true } },
+        host: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+            role: true
+          }
+        },
         _count: { select: { bookings: true, reviews: true } }
       }
     });
 
-    //cache for 60 seconds
+    // cache for 60 seconds
     setCache(cacheKey, listings, 60);
 
     res.json(listings);
@@ -35,18 +42,25 @@ export const getAllListings = async (req: Request, res: Response, next: NextFunc
 // GET /listings/:id
 export const getListingById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    //fix — use bracket notation and validate
-    const id = parseInt(req.params["id"] as string);
-
-    if (isNaN(id)) {
-      res.status(400).json({ message: "Invalid listing ID" });
-      return;
-    }
+    const id = req.params["id"] as string;
 
     const listing = await prisma.listing.findUnique({
       where: { id },
       include: {
-        host: true,
+        host: {
+          select: {
+            // 👇 never include password
+            id: true,
+            name: true,
+            email: true,
+            username: true,
+            phone: true,
+            role: true,
+            avatar: true,
+            bio: true,
+            createdAt: true
+          }
+        },
         bookings: {
           include: {
             guest: {
@@ -56,7 +70,9 @@ export const getListingById = async (req: Request, res: Response, next: NextFunc
         },
         reviews: {
           include: {
-            user: { select: { name: true, avatar: true } }
+            user: {
+              select: { name: true, avatar: true }
+            }
           }
         }
       }
@@ -82,14 +98,14 @@ export const createListing = async (req: AuthRequest, res: Response, next: NextF
       return;
     }
 
-    //use hostId from token — never from request body
+    // use hostId from token — never from request body
     const hostId = req.userId!;
 
     const newListing = await prisma.listing.create({
       data: { ...result.data, hostId }
     });
 
-    // clear cache when new listing is created
+    //clear cache when new listing is created
     deleteCache("listings:all");
     deleteCache("stats:listings");
 
@@ -102,12 +118,7 @@ export const createListing = async (req: AuthRequest, res: Response, next: NextF
 // PUT /listings/:id
 export const updateListing = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params["id"] as string);
-
-    if (isNaN(id)) {
-      res.status(400).json({ message: "Invalid listing ID" });
-      return;
-    }
+    const id = req.params["id"] as string;
 
     const result = updateListingSchema.safeParse(req.body);
     if (!result.success) {
@@ -121,7 +132,7 @@ export const updateListing = async (req: AuthRequest, res: Response, next: NextF
       return;
     }
 
-    //ownership check — ADMIN bypasses
+    // ownership check — ADMIN bypasses
     if (existing.hostId !== req.userId && req.role !== "ADMIN") {
       res.status(403).json({ message: "You can only edit your own listings" });
       return;
@@ -132,7 +143,7 @@ export const updateListing = async (req: AuthRequest, res: Response, next: NextF
       data: result.data
     });
 
-    // clear cache when listing is updated
+    //clear cache when listing is updated
     deleteCache("listings:all");
     deleteCache("stats:listings");
 
@@ -145,12 +156,7 @@ export const updateListing = async (req: AuthRequest, res: Response, next: NextF
 // DELETE /listings/:id
 export const deleteListing = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params["id"] as string);
-
-    if (isNaN(id)) {
-      res.status(400).json({ message: "Invalid listing ID" });
-      return;
-    }
+    const id = req.params["id"] as string;
 
     const existing = await prisma.listing.findFirst({ where: { id } });
     if (!existing) {
@@ -166,7 +172,7 @@ export const deleteListing = async (req: AuthRequest, res: Response, next: NextF
 
     await prisma.listing.delete({ where: { id } });
 
-    // clear cache when listing is deleted
+    //clear cache when listing is deleted
     deleteCache("listings:all");
     deleteCache("stats:listings");
 
@@ -179,7 +185,6 @@ export const deleteListing = async (req: AuthRequest, res: Response, next: NextF
 // GET /listings/search
 export const searchListings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // cast each param to string explicitly
     const location = req.query.location as string | undefined;
     const type = req.query.type as string | undefined;
     const minPrice = req.query.minPrice as string | undefined;
@@ -189,13 +194,13 @@ export const searchListings = async (req: Request, res: Response, next: NextFunc
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    // build where clause dynamically
+    //build where clause dynamically
     const where: any = {};
 
     if (location) {
       where.location = {
         contains: location,
-        mode: "insensitive"  // case insensitive
+        mode: "insensitive"
       };
     }
 
@@ -213,12 +218,18 @@ export const searchListings = async (req: Request, res: Response, next: NextFunc
       where.guests = { gte: parseInt(guests) };
     }
 
-    // Promise.all — parallel queries
+    //Promise.all — parallel queries
     const [listings, total] = await Promise.all([
       prisma.listing.findMany({
         where,
         include: {
-          host: { select: { name: true, avatar: true } },
+          host: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true
+            }
+          },
           _count: { select: { bookings: true, reviews: true } }
         },
         skip,

@@ -1,12 +1,12 @@
 import { Router } from "express";
-import upload from "../config/multer";
+import upload from "../../config/multer";
 import {
   uploadAvatar,
   deleteAvatar,
   uploadListingPhotos,
   deleteListingPhoto
-} from "../controllers/upload.controller";
-import { authenticate } from "../middleware/auth.middleware";
+} from "../../controllers/upload.controller";
+import { authenticate } from "../../middleware/auth.middleware";
 
 const router = Router();
 

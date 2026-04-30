@@ -3,9 +3,9 @@ import {
   getListingReviews,
   createReview,
   deleteReview
-} from "../controllers/reviews.controller";
-import { authenticate } from "../middleware/auth.middleware";
-import { strictLimiter } from "../middleware/rateLimiter";
+} from "../../controllers/reviews.controller";
+import { authenticate } from "../../middleware/auth.middleware";
+import { strictLimiter } from "../../middleware/rateLimiter";
 
 const router = Router();
 

@@ -199,12 +199,12 @@ import {
   updateListing,
   deleteListing,
   searchListings,
-} from "../controllers/listings.controller";
-import { validate } from "../middleware/validate";
-import { createListingSchema, updateListingSchema } from "../validators/listings.validator";
-import { authenticate, requireHost } from "../middleware/auth.middleware";
-import { strictLimiter } from "../middleware/rateLimiter";
-import { getListingsStats } from "../controllers/stats.controller";
+} from "../../controllers/listings.controller";
+import { validate } from "../../middleware/validate";
+import { createListingSchema, updateListingSchema } from "../../validators/listings.validator";
+import { authenticate, requireHost } from "../../middleware/auth.middleware";
+import { strictLimiter } from "../../middleware/rateLimiter";
+import { getListingsStats } from "../../controllers/stats.controller";
 
 const router = Router();
 

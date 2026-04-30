@@ -2,12 +2,22 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { createUserSchema, updateUserSchema } from "../validators/users.validator";
 import { createProfileSchema, updateProfileSchema } from "../validators/profile.validator";
+import { AuthRequest } from "../middleware/auth.middleware";
 
 // GET /users
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await prisma.user.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        phone: true,
+        role: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
         _count: { select: { listings: true } }
       }
     });
@@ -20,7 +30,8 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 // GET /users/:id
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id);
+    // 👇 no parseInt — id is now a string
+    const id = req.params["id"] as string;
 
     const user = await prisma.user.findUnique({ where: { id } });
 
@@ -29,11 +40,19 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    // return different data based on role
     if (user.role === "HOST") {
       const hostWithListings = await prisma.user.findUnique({
         where: { id },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          username: true,
+          phone: true,
+          role: true,
+          avatar: true,
+          bio: true,
+          createdAt: true,
           listings: {
             include: {
               _count: { select: { bookings: true } }
@@ -45,7 +64,16 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     } else {
       const guestWithBookings = await prisma.user.findUnique({
         where: { id },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          username: true,
+          phone: true,
+          role: true,
+          avatar: true,
+          bio: true,
+          createdAt: true,
           bookings: {
             include: {
               listing: {
@@ -92,7 +120,8 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 // PUT /users/:id
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id);
+    // 👇 no parseInt
+    const id = req.params["id"] as string;
 
     const result = updateUserSchema.safeParse(req.body);
     if (!result.success) {
@@ -120,7 +149,8 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 // DELETE /users/:id
 export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id);
+    // 👇 no parseInt
+    const id = req.params["id"] as string;
 
     const existing = await prisma.user.findFirst({ where: { id } });
     if (!existing) {
@@ -138,7 +168,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
 // GET /users/:id/profile
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params["id"] as string;
 
     const profile = await prisma.profile.findUnique({
       where: { userId: id },
@@ -157,9 +187,9 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
 };
 
 // POST /users/:id/profile
-export const createUserProfile = async (req: Request, res: Response, next: NextFunction) => {
+export const createUserProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params["id"] as string;
 
     const result = createProfileSchema.safeParse(req.body);
     if (!result.success) {
@@ -190,9 +220,9 @@ export const createUserProfile = async (req: Request, res: Response, next: NextF
 };
 
 // PUT /users/:id/profile
-export const updateUserProfile = async (req: Request, res: Response, next: NextFunction) => {
+export const updateUserProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params["id"] as string;
 
     const result = updateProfileSchema.safeParse(req.body);
     if (!result.success) {

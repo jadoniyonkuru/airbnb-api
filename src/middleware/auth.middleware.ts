@@ -3,30 +3,26 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env["JWT_SECRET"] as string;
 
-// extend Request type so TypeScript knows about userId and role
+// 👇 userId is now string — was number
 export interface AuthRequest extends Request {
-  userId?: number;
+  userId?: string;
   role?: string;
 }
 
-// authenticate — verify JWT token
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers["authorization"];
 
-    // check header exists and starts with "Bearer "
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       res.status(401).json({ message: "No token provided" });
       return;
     }
 
-    // extract token
     const token = authHeader.split(" ")[1];
 
-    // verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
+    // 👇 userId is now string
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string };
 
-    // attach userId and role to request
     req.userId = decoded.userId;
     req.role = decoded.role;
 
@@ -36,7 +32,6 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   }
 };
 
-// requireHost — only HOST or ADMIN
 export const requireHost = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (req.role === "HOST" || req.role === "ADMIN") {
     next();
@@ -45,7 +40,6 @@ export const requireHost = (req: AuthRequest, res: Response, next: NextFunction)
   res.status(403).json({ message: "Access denied. Hosts only." });
 };
 
-// requireGuest — only GUEST or ADMIN
 export const requireGuest = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (req.role === "GUEST" || req.role === "ADMIN") {
     next();
@@ -54,7 +48,6 @@ export const requireGuest = (req: AuthRequest, res: Response, next: NextFunction
   res.status(403).json({ message: "Access denied. Guests only." });
 };
 
-// requireAdmin — only ADMIN
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (req.role === "ADMIN") {
     next();

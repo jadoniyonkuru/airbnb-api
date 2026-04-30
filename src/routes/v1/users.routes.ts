@@ -268,11 +268,11 @@ import {
   getUserProfile,
   createUserProfile,
   updateUserProfile
-} from "../controllers/users.controller";
-import { validate } from "../middleware/validate";
-import { createUserSchema, updateUserSchema } from "../validators/users.validator";
-import { authenticate } from "../middleware/auth.middleware";
-import { getUsersStats } from "../controllers/stats.controller";
+} from "../../controllers/users.controller";
+import { validate } from "../../middleware/validate";
+import { createUserSchema, updateUserSchema } from "../../validators/users.validator";
+import { authenticate } from "../../middleware/auth.middleware";
+import { getUsersStats } from "../../controllers/stats.controller";
 
 const router = Router();
 
