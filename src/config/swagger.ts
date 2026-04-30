@@ -64,7 +64,7 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             token: { type: "string", example: "eyJhbGciOiJIUzI1NiJ9..." },
-            user: { "$ref": "#/components/schemas/User" }
+            user: { $ref: "#/components/schemas/User" }
           }
         },
         ErrorResponse: {
@@ -87,6 +87,19 @@ const options: swaggerJsdoc.Options = {
             rating: { type: "number", nullable: true, example: 4.5 },
             hostId: { type: "string", example: "uuid-456" },
             createdAt: { type: "string", format: "date-time" }
+          }
+        },
+        CreateListingInput: {
+          type: "object",
+          required: ["title", "description", "location", "pricePerNight", "guests", "type", "amenities"],
+          properties: {
+            title: { type: "string", example: "Cozy Apartment" },
+            description: { type: "string", example: "A nice place to stay" },
+            location: { type: "string", example: "Kigali, Rwanda" },
+            pricePerNight: { type: "number", example: 80 },
+            guests: { type: "integer", example: 2 },
+            type: { type: "string", enum: ["APARTMENT", "HOUSE", "VILLA", "CABIN"] },
+            amenities: { type: "array", items: { type: "string" }, example: ["wifi", "pool"] }
           }
         },
         Booking: {
@@ -112,26 +125,11 @@ const options: swaggerJsdoc.Options = {
             listingId: { type: "string", example: "uuid-789" },
             createdAt: { type: "string", format: "date-time" }
           }
-        },
-        CreateListingInput: {
-          type: "object",
-          required: ["title", "description", "location", "pricePerNight", "guests", "type", "amenities"],
-          properties: {
-            title: { type: "string", example: "Cozy Apartment" },
-            description: { type: "string", example: "A nice place to stay" },
-            location: { type: "string", example: "Kigali, Rwanda" },
-            pricePerNight: { type: "number", example: 80 },
-            guests: { type: "integer", example: 2 },
-            type: { type: "string", enum: ["APARTMENT", "HOUSE", "VILLA", "CABIN"] },
-            amenities: { type: "array", items: { type: "string" }, example: ["wifi", "pool"] }
-          }
         }
       }
     }
   },
-  
-  
-apis: [path.join(__dirname, "../routes/**/*.ts"), path.join(__dirname, "../routes/**/*.js")],
+  apis: [path.join(__dirname, "../routes/**/*.ts"), path.join(__dirname, "../routes/**/*.js")],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
@@ -144,5 +142,5 @@ export function setupSwagger(app: Express): void {
     res.send(swaggerSpec);
   });
 
-  console.log(" Swagger docs available at http://localhost:3000/api-docs");
+  console.log("Swagger docs available at http://localhost:3000/api-docs");
 }
