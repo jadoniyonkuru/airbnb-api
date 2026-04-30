@@ -25,7 +25,7 @@ app.use(generalLimiter);
 // swagger docs
 setupSwagger(app);
 
-// 👇 API versioning — all routes under /api/v1
+// API versioning — all routes under /api/v1
 const v1 = express.Router();
 
 v1.use("/auth", authRoutes);

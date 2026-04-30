@@ -107,8 +107,16 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
+    if (!req.body.password) {
+      res.status(400).json({ message: "password is required" });
+      return;
+    }
+
+    const bcrypt = await import("bcrypt");
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
     const newUser = await prisma.user.create({
-      data: { name, email, username, phone, role }
+      data: { name, email, username, phone, role, password: hashedPassword }
     });
 
     res.status(201).json(newUser);
