@@ -51,6 +51,6 @@ export function errorHandler(
     }
   }
 
-  console.error(err);
-  res.status(500).json({ error: "Something went wrong" });
+  console.error("[Unhandled Error]", err instanceof Error ? err.message : err);
+  res.status(500).json({ error: "Something went wrong", detail: err instanceof Error ? err.message : String(err) });
 }

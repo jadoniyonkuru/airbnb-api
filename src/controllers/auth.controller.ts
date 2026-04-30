@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth.middleware";
 import crypto from "crypto";
-import { sendEmail } from "../config/email.js";
+import { sendEmail } from "../config/email";
 import { welcomeEmail, passwordResetEmail } from "../emails";
 const JWT_SECRET = process.env["JWT_SECRET"] as string;
 
