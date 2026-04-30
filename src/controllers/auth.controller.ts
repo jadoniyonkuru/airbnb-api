@@ -5,7 +5,7 @@ import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth.middleware";
 import crypto from "crypto";
 import { sendEmail } from "../config/email.js";
-import { welcomeEmail, passwordResetEmail } from "../templates/emails";
+import { welcomeEmail, passwordResetEmail } from "../emails";
 const JWT_SECRET = process.env["JWT_SECRET"] as string;
 
 // POST /auth/register
@@ -66,7 +66,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       await sendEmail(
         email,
         "Welcome to Airbnb!",
-        welcomeEmail(name, role ?? "GUEST")
+        welcomeEmail(name)
       );
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError);
