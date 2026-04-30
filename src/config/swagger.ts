@@ -12,8 +12,10 @@ const options: Options = {
       description: "A simplified Airbnb-like REST API with authentication, listings, bookings, and file uploads.",
     },
     servers: [
-      { url: "http://localhost:3000/api/v1", description: "Development server" },
-      { url: `${process.env["API_URL"]}/api/v1`, description: "Production server" }
+      {
+        url: process.env["API_URL"] ? `${process.env["API_URL"]}/api/v1` : "http://localhost:3000/api/v1",
+        description: process.env["API_URL"] ? "Production server" : "Development server"
+      }
     ],
     components: {
       securitySchemes: {
