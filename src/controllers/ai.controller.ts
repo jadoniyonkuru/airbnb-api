@@ -5,6 +5,11 @@ import { AuthRequest } from "../middleware/auth.middleware";
 
 const groq = new Groq({ apiKey: process.env["GROQ_API_KEY"] });
 
+const getStringParam = (value: string | string[] | undefined): string | undefined => {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+};
+
 const chat_sessions = new Map<string, { role: "user" | "assistant"; content: string }[]>();
 
 // POST /api/v1/ai/search
@@ -72,8 +77,9 @@ export const aiSearch = async (req: Request, res: Response, next: NextFunction) 
 // POST /api/v1/ai/listings/:id/generate-description
 export const generateDescription = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = getStringParam(req.params.id);
     const tone = req.body.tone ?? "professional";
+    if (!id) { res.status(400).json({ message: "Listing id is required" }); return; }
 
     const listing = await prisma.listing.findUnique({ where: { id } });
     if (!listing) { res.status(404).json({ message: "Listing not found" }); return; }
@@ -113,8 +119,9 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
     const history = chat_sessions.get(sessionId) ?? [];
 
     let systemContext = "You are a helpful Airbnb guest support assistant.";
-    if (listingId) {
-      const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+    const listingIdValue = getStringParam(listingId);
+    if (listingIdValue) {
+      const listing = await prisma.listing.findUnique({ where: { id: listingIdValue } });
       if (listing) {
         systemContext += ` The guest is asking about: ${listing.title} in ${listing.location}. Price: $${listing.pricePerNight}/night. ${listing.description ?? ""}`;
       }
@@ -195,7 +202,8 @@ export const recommend = async (req: AuthRequest, res: Response, next: NextFunct
 // GET /api/v1/ai/listings/:id/review-summary
 export const reviewSummary = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = getStringParam(req.params.id);
+    if (!id) { res.status(400).json({ message: "Listing id is required" }); return; }
 
     const listing = await prisma.listing.findUnique({ where: { id } });
     if (!listing) { res.status(404).json({ message: "Listing not found" }); return; }

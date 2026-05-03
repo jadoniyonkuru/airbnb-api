@@ -74,6 +74,7 @@ model Listing {
   bookings      Booking[]
   reviews       Review[]
   photos        ListingPhoto[]
+  conversations Conversation[]
 
   @@index([hostId])
   @@index([location])
@@ -122,20 +123,20 @@ model Review {
 }
 
 model Conversation {
-  id        String   @id @default(uuid())
-  sessionId String   @unique
-  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  id        String    @id @default(uuid())
+  sessionId String    @unique
+  listing   Listing?  @relation(fields: [listingId], references: [id], onDelete: SetNull)
   listingId String?
   messages  Message[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Message {
-  id          String       @id @default(uuid())
-  sessionId   String
+  id           String       @id @default(uuid())
+  sessionId    String
   conversation Conversation @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
-  role        String
-  content     String
-  createdAt   DateTime     @default(now())
+  role         String
+  content      String
+  createdAt    DateTime     @default(now())
 }
