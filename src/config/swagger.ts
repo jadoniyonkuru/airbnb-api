@@ -133,6 +133,14 @@ const options: Options = {
             createdAt: { type: "string", format: "date-time" }
           }
         },
+        CreateReviewInput: {
+          type: "object",
+          required: ["rating", "comment"],
+          properties: {
+            rating: { type: "integer", minimum: 1, maximum: 5, example: 5 },
+            comment: { type: "string", example: "Great place!" }
+          }
+        },
         AISearchRequest: {
           type: "object",
           required: ["query"],

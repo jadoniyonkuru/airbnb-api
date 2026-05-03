@@ -48,7 +48,7 @@ app.get("/api/v1", (req, res) => {
       users: "/api/v1/users",
       listings: "/api/v1/listings",
       bookings: "/api/v1/bookings",
-      reviews: "/api/v1/listings/:id/reviews"
+      reviews: "/api/v1/reviews"
     }
   });
 });
