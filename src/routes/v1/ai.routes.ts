@@ -12,7 +12,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/v1/ai/search:
+ * /ai/search:
  *   post:
  *     summary: Smart listing search using AI
  *     tags: [AI]
@@ -48,7 +48,7 @@ router.post("/search", aiSearch);
 
 /**
  * @swagger
- * /api/v1/ai/listings/{id}/generate-description:
+ * /ai/listings/{id}/generate-description:
  *   post:
  *     summary: Generate AI listing description with tone control
  *     tags: [AI]
@@ -84,7 +84,7 @@ router.post("/listings/:id/generate-description", authenticate, generateDescript
 
 /**
  * @swagger
- * /api/v1/ai/chat:
+ * /ai/chat:
  *   post:
  *     summary: Guest support chatbot with optional listing context
  *     tags: [AI]
@@ -126,7 +126,7 @@ router.post("/chat", chat);
 
 /**
  * @swagger
- * /api/v1/ai/recommend:
+ * /ai/recommend:
  *   post:
  *     summary: AI listing recommendations based on booking history
  *     tags: [AI]
@@ -155,7 +155,7 @@ router.post("/recommend", authenticate, recommend);
 
 /**
  * @swagger
- * /api/v1/ai/listings/{id}/review-summary:
+ * /ai/listings/{id}/review-summary:
  *   get:
  *     summary: AI generated review summary for a listing
  *     tags: [AI]
