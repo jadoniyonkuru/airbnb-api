@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import compression from "compression";
 import morgan from "morgan";
+import cors from "cors";
 import { connectDB } from "./config/prisma";
 import { setupSwagger } from "./config/swagger";
 import { generalLimiter } from "./middleware/rateLimiter";
@@ -11,6 +12,7 @@ import listingsRoutes from "./routes/v1/listings.routes";
 import bookingsRoutes from "./routes/v1/bookings.routes";
 import uploadRoutes from "./routes/v1/upload.routes";
 import reviewsRoutes from "./routes/v1/reviews.routes";
+import aiRoutes from "./routes/v1/ai.routes";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -22,6 +24,19 @@ app.use(
     ? morgan("combined")
     : morgan("dev")
 );
+
+// CORS configuration - allow Swagger UI and development origins
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(compression());
 app.use(express.json());
@@ -60,6 +75,8 @@ v1.use(reviewsRoutes);
 
 // mount v1
 app.use("/api/v1", v1);
+
+v1.use("/ai", aiRoutes);
 
 // old URL redirects
 app.use("/users", (req: Request, res: Response) => {
