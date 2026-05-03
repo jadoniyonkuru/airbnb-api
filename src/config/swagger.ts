@@ -5,7 +5,6 @@ import path from "path";
 
 const apiUrl = process.env["API_URL"];
 const localApiUrl = "http://localhost:3000/api/v1";
-const localAiUrl = "http://localhost:3000/ai";
 
 const options: Options = {
   definition: {
@@ -18,21 +17,13 @@ const options: Options = {
     servers: [
       {
         url: localApiUrl,
-        description: "Local development server (v1)"
-      },
-      {
-        url: localAiUrl,
-        description: "Local development server (AI)"
+        description: "Local development server"
       },
       ...(apiUrl
         ? [
             {
               url: `${apiUrl}/api/v1`,
-              description: "Production server (v1)"
-            },
-            {
-              url: `${apiUrl}/ai`,
-              description: "Production server (AI)"
+              description: "Production server"
             }
           ]
         : [])
