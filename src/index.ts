@@ -12,7 +12,7 @@ import listingsRoutes from "./routes/v1/listings.routes";
 import bookingsRoutes from "./routes/v1/bookings.routes";
 import uploadRoutes from "./routes/v1/upload.routes";
 import reviewsRoutes from "./routes/v1/reviews.routes";
-import aiRoutes from "./routes/v1/ai.routes";
+import aiRoutes from "./routes/ai.routes";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -76,7 +76,8 @@ v1.use(reviewsRoutes);
 // mount v1
 app.use("/api/v1", v1);
 
-v1.use("/ai", aiRoutes);
+// AI routes (separate from v1 for now)
+app.use("/ai", aiRoutes);
 
 // old URL redirects
 app.use("/users", (req: Request, res: Response) => {

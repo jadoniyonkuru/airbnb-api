@@ -3,6 +3,10 @@ import swaggerUi from "swagger-ui-express";
 import { Express } from "express";
 import path from "path";
 
+const apiUrl = process.env["API_URL"];
+const localApiUrl = "http://localhost:3000/api/v1";
+const localAiUrl = "http://localhost:3000/ai";
+
 const options: Options = {
   definition: {
     openapi: "3.0.0",
@@ -13,9 +17,25 @@ const options: Options = {
     },
     servers: [
       {
-        url: process.env["API_URL"] ? `${process.env["API_URL"]}/api/v1` : "http://localhost:3000/api/v1",
-        description: process.env["API_URL"] ? "Production server" : "Development server"
-      }
+        url: localApiUrl,
+        description: "Local development server (v1)"
+      },
+      {
+        url: localAiUrl,
+        description: "Local development server (AI)"
+      },
+      ...(apiUrl
+        ? [
+            {
+              url: `${apiUrl}/api/v1`,
+              description: "Production server (v1)"
+            },
+            {
+              url: `${apiUrl}/ai`,
+              description: "Production server (AI)"
+            }
+          ]
+        : [])
     ],
     components: {
       securitySchemes: {
@@ -120,6 +140,38 @@ const options: Options = {
             userId: { type: "string", example: "uuid-456" },
             listingId: { type: "string", example: "uuid-789" },
             createdAt: { type: "string", format: "date-time" }
+          }
+        },
+        AISearchRequest: {
+          type: "object",
+          required: ["query"],
+          properties: {
+            query: { type: "string", example: "apartment in Kigali under $100 for 2 guests" }
+          }
+        },
+        AIChatRequest: {
+          type: "object",
+          required: ["sessionId", "message"],
+          properties: {
+            sessionId: { type: "string", example: "user-123-session-1" },
+            message: { type: "string", example: "Does this place have WiFi?" },
+            listingId: { type: "string", example: "8108f16b-0574-46bd-a533-1ce2edb914fa" }
+          }
+        },
+        AIDescriptionRequest: {
+          type: "object",
+          properties: {
+            tone: { type: "string", enum: ["professional", "casual", "luxury"], example: "luxury" }
+          }
+        },
+        AIReviewSummary: {
+          type: "object",
+          properties: {
+            summary: { type: "string", example: "Guests love the location and amenities" },
+            positives: { type: "array", items: { type: "string" }, example: ["Great location", "Clean", "Good WiFi"] },
+            negatives: { type: "array", items: { type: "string" }, example: ["No parking", "Small bathroom"] },
+            averageRating: { type: "number", example: 4.5 },
+            totalReviews: { type: "integer", example: 12 }
           }
         }
       }
