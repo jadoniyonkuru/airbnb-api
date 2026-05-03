@@ -23,7 +23,7 @@ export const aiSearch = async (req: Request, res: Response, next: NextFunction) 
     const skip = (page - 1) * limit;
 
     const completion = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
@@ -45,7 +45,7 @@ export const aiSearch = async (req: Request, res: Response, next: NextFunction) 
 
     const where: any = {};
     if (filters.location) where.location = { contains: filters.location, mode: "insensitive" };
-    if (filters.type) where.type = filters.type;
+    if (filters.type) where.type = filters.type.toUpperCase();
     if (filters.minPrice || filters.maxPrice) {
       where.pricePerNight = {};
       if (filters.minPrice) where.pricePerNight.gte = filters.minPrice;
@@ -88,7 +88,7 @@ export const generateDescription = async (req: AuthRequest, res: Response, next:
     }
 
     const completion = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
@@ -130,7 +130,7 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
     history.push({ role: "user", content: message });
 
     const completion = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.3-70b-versatile",
       messages: [{ role: "system", content: systemContext }, ...history]
     });
 
@@ -163,7 +163,7 @@ export const recommend = async (req: AuthRequest, res: Response, next: NextFunct
     ).join("; ");
 
     const completion = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
@@ -183,7 +183,7 @@ export const recommend = async (req: AuthRequest, res: Response, next: NextFunct
 
     const where: any = {};
     if (aiResult.searchFilters?.location) where.location = { contains: aiResult.searchFilters.location, mode: "insensitive" };
-    if (aiResult.searchFilters?.type) where.type = aiResult.searchFilters.type;
+    if (aiResult.searchFilters?.type) where.type = aiResult.searchFilters.type.toUpperCase();
     if (aiResult.searchFilters?.maxPrice) where.pricePerNight = { lte: aiResult.searchFilters.maxPrice };
 
     const recommendations = await prisma.listing.findMany({
@@ -219,7 +219,7 @@ export const reviewSummary = async (req: Request, res: Response, next: NextFunct
     const averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
 
     const completion = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
