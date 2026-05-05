@@ -40,9 +40,62 @@ const router = Router();
  *                 example: apartment in Kigali under $100 for 2 guests
  *     responses:
  *       200:
- *         description: AI extracted filters and matching listings
+ *         description: AI extracted filters and matching listings. If no results found, includes available locations, types, and popular listings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 filters:
+ *                   type: object
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Listing'
+ *                 message:
+ *                   type: string
+ *                   description: Present only when no results found
+ *                   example: "No listings found for your search. Here's what's available:"
+ *                 suggestions:
+ *                   type: object
+ *                   description: Present only when no results found
+ *                   properties:
+ *                     availableLocations:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["Kigali", "Musanze", "Nyarutarama"]
+ *                     availableTypes:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["APARTMENT", "HOUSE", "VILLA", "CABIN"]
+ *                     popularListings:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["VILLA in Nyarutarama ($350/night)", "CABIN in Musanze ($90/night)"]
  *       400:
- *         description: Could not extract filters from query
+ *         description: Could not extract filters from query or query is too vague
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: "Could not extract filters from query"
+ *                 - type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: "Your search query is too vague. Please try more specific terms like:"
+ *                     suggestions:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["apartment in Kigali under $100", "house for 4 guests in Musanze"]
  */
 router.post("/search", aiSearch);
 

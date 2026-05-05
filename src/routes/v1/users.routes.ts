@@ -285,7 +285,6 @@ router.put("/:id", validate(updateUserSchema), updateUser);
 router.delete("/:id", deleteUser);
 
 // profile routes
-router.get("/:id/profile", getUserProfile);
 router.post("/:id/profile", authenticate, createUserProfile);
 router.put("/:id/profile", authenticate, updateUserProfile);
 

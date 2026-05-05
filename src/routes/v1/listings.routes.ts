@@ -45,6 +45,84 @@
 
 /**
  * @swagger
+ * /listings/search:
+ *   get:
+ *     summary: Search listings by location, type, price range, guests
+ *     tags: [Listings]
+ *     parameters:
+ *       - in: query
+ *         name: location
+ *         schema:
+ *           type: string
+ *         description: Location to search for (partial match, case insensitive)
+ *         example: Kigali
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         description: Listing type (APARTMENT, HOUSE, etc.)
+ *         example: APARTMENT
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Minimum price per night
+ *         example: 50
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Maximum price per night
+ *         example: 200
+ *       - in: query
+ *         name: guests
+ *         schema:
+ *           type: integer
+ *         description: Minimum number of guests
+ *         example: 2
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination
+ *         example: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of results per page
+ *         example: 10
+ *     responses:
+ *       200:
+ *         description: List of matching listings with pagination metadata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Listing'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       example: 25
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 3
+ */
+
+/**
+ * @swagger
  * /listings:
  *   post:
  *     summary: Create a new listing
@@ -190,7 +268,45 @@
  *       404:
  *         description: Photo not found
  */
-
+/**
+ * @swagger
+ * /listings/stats:
+ *   get:
+ *     summary: Get listing statistics
+ *     tags: [Listings]
+ *     responses:
+ *       200:
+ *         description: Total listings, average price, count by location and type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalListings:
+ *                   type: integer
+ *                   example: 6
+ *                 averagePrice:
+ *                   type: number
+ *                   example: 114.16
+ *                 byLocation:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       location:
+ *                         type: string
+ *                       _count:
+ *                         type: object
+ *                 byType:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       type:
+ *                         type: string
+ *                       _count:
+ *                         type: object
+ */
 import { Router } from "express";
 import {
   getAllListings,

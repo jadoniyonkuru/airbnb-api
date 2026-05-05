@@ -43,6 +43,24 @@ export const aiSearch = async (req: Request, res: Response, next: NextFunction) 
       res.status(400).json({ message: "Could not extract filters from query" }); return;
     }
 
+    // Check if any meaningful filters were extracted
+    const hasFilters = Object.keys(filters).length > 0 && 
+                      Object.values(filters).some(value => value !== null && value !== undefined && value !== "");
+
+    if (!hasFilters) {
+      res.status(400).json({ 
+        message: "Your search query is too vague!. Please try more specific terms like:",
+        suggestions: [
+          "apartment in Kigali under $100",
+          "house for 4 guests in Musanze", 
+          "luxury villa in Nyarutarama",
+          "cabin with mountain view",
+          "studio apartment in Kimihurura"
+        ]
+      }); 
+      return;
+    }
+
     const where: any = {};
     if (filters.location) where.location = { contains: filters.location, mode: "insensitive" };
     if (filters.type) where.type = filters.type.toUpperCase();
@@ -63,6 +81,40 @@ export const aiSearch = async (req: Request, res: Response, next: NextFunction) 
       }),
       prisma.listing.count({ where })
     ]);
+
+    // If no results found, provide helpful suggestions
+    if (total === 0) {
+      const [allListings, distinctLocations, distinctTypes] = await Promise.all([
+        prisma.listing.findMany({
+          select: { location: true, type: true, pricePerNight: true },
+          take: 5,
+          orderBy: { rating: "desc" }
+        }),
+        prisma.listing.findMany({
+          where: { location: { not: null } },
+          distinct: ["location"],
+          select: { location: true },
+          take: 5
+        }),
+        prisma.listing.findMany({
+          distinct: ["type"],
+          select: { type: true }
+        })
+      ]);
+
+      res.status(200).json({
+        message: "There is No listings found for your search. Here's what's available:",
+        filters,
+        suggestions: {
+          availableLocations: distinctLocations.map(l => l.location).filter(Boolean),
+          availableTypes: distinctTypes.map(t => t.type).filter(Boolean),
+          popularListings: allListings.map(l => `${l.type} in ${l.location} ($${l.pricePerNight}/night)`)
+        },
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 }
+      });
+      return;
+    }
 
     res.json({
       filters,
