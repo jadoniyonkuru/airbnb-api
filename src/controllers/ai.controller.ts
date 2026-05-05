@@ -91,7 +91,6 @@ export const aiSearch = async (req: Request, res: Response, next: NextFunction) 
           orderBy: { rating: "desc" }
         }),
         prisma.listing.findMany({
-          where: { NOT: { location: null } },
           distinct: ["location"],
           select: { location: true },
           take: 5
