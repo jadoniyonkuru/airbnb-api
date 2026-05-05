@@ -258,6 +258,39 @@
  *         description: User not found
  */
 
+/**
+ * @swagger
+ * /users/stats:
+ *   get:
+ *     summary: Total users, count by role (host/guest)
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: User statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalUsers:
+ *                   type: integer
+ *                   example: 42
+ *                 byRole:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       role:
+ *                         type: string
+ *                         example: HOST
+ *                       _count:
+ *                         type: object
+ *                         properties:
+ *                           role:
+ *                             type: integer
+ *                             example: 12
+ */
+
 import { Router } from "express";
 import {
   getAllUsers,
@@ -276,7 +309,7 @@ import { getUsersStats } from "../../controllers/stats.controller";
 
 const router = Router();
 
-// 👇 stats must come before /:id
+// stats must come before /:id
 router.get("/stats", getUsersStats);
 router.get("/", getAllUsers);
 router.get("/:id", getUserById);
