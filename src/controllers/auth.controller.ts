@@ -239,13 +239,19 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     // send password reset email
     const resetLink = `http://localhost:3000/auth/reset-password/${rawToken}`;
     try {
+      console.log(`Attempting to send password reset email to ${email}`);
       await sendEmail(
         email,
         "Password Reset Request",
         passwordResetEmail(user.name, resetLink)
       );
+      console.log(`Password reset email sent successfully to ${email}`);
     } catch (emailError) {
-      console.error("Failed to send reset email:", emailError);
+      console.error(`CRITICAL: Failed to send reset email to ${email}:`, emailError);
+      console.error("Email error details:", {
+        message: emailError instanceof Error ? emailError.message : String(emailError),
+        stack: emailError instanceof Error ? emailError.stack : undefined
+      });
     }
 
     res.json({ message: successMessage });
