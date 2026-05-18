@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth.middleware";
@@ -44,7 +44,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }
 
     // hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = bcrypt.hashSync(password, 10);
 
     // create user
     const user = await prisma.user.create({
@@ -97,7 +97,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return;
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = bcrypt.compareSync(password, user.password);
     if (!isMatch) {
       res.status(401).json({ message: "Invalid credentials" });
       return;
@@ -176,7 +176,7 @@ export const changePassword = async (req: AuthRequest, res: Response, next: Next
       res.status(404).json({ message: "User not found" });
       return;
     }
-const isMatch = await bcrypt.compare(currentPassword, user.password);
+  const isMatch = bcrypt.compareSync(currentPassword, user.password);
     if (!isMatch) {
       res.status(401).json({ message: "Current password is incorrect" });
       return;
@@ -187,7 +187,7 @@ const isMatch = await bcrypt.compare(currentPassword, user.password);
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
     await prisma.user.update({
       where: { id: req.userId! },
       data: { password: hashedPassword }
@@ -237,7 +237,9 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     });
 
     // send password reset email
-    const resetLink = `http://localhost:3000/auth/reset-password/${rawToken}`;
+    const FRONTEND_URL = process.env["FRONTEND_URL"] || "http://localhost:5173";
+    // prefer sending user to the SPA reset page
+    const resetLink = `${FRONTEND_URL}/reset-password/${rawToken}`;
     try {
       console.log(`Attempting to send password reset email to ${email}`);
       await sendEmail(

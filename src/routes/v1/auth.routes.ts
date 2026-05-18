@@ -10,6 +10,7 @@ import {
 import { authenticate } from "../../middleware/auth.middleware";
 
 const router = Router();
+const FRONTEND_URL = process.env["FRONTEND_URL"] || "http://localhost:5173";
 
 /**
  * @swagger
@@ -164,5 +165,11 @@ router.post("/forgot-password", forgotPassword);
  *         description: Invalid or expired token
  */
 router.post("/reset-password/:token", resetPassword);
+
+// Redirect GET requests (e.g. from email links) to the SPA reset page
+router.get("/reset-password/:token", (req, res) => {
+  const { token } = req.params;
+  res.redirect(`${FRONTEND_URL}/reset-password/${token}`);
+});
 
 export default router;

@@ -125,6 +125,37 @@ export const aiSearch = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
+// POST /api/v1/ai/describe  — generate description from form data (before listing is saved)
+export const describeFromForm = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { title, type, location, amenities = [], tone = "professional" } = req.body;
+    if (!title) { res.status(400).json({ message: "title is required" }); return; }
+
+    const amenitiesStr = Array.isArray(amenities) && amenities.length > 0
+      ? `Amenities: ${amenities.slice(0, 8).join(", ")}.`
+      : "";
+
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content: `You are a real estate copywriter. Write a compelling ${tone} listing description in 2-3 sentences. Be specific, vivid and inviting.`
+        },
+        {
+          role: "user",
+          content: `Property: "${title}". Type: ${type ?? "apartment"}. Location: ${location || "a great location"}. ${amenitiesStr}`
+        }
+      ]
+    });
+
+    const description = completion.choices[0]?.message?.content?.trim() ?? "";
+    res.json({ description });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // POST /api/v1/ai/listings/:id/generate-description
 export const generateDescription = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {

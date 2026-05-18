@@ -320,13 +320,14 @@ import { validate } from "../../middleware/validate";
 import { createListingSchema, updateListingSchema } from "../../validators/listings.validator";
 import { authenticate, requireHost } from "../../middleware/auth.middleware";
 import { strictLimiter } from "../../middleware/rateLimiter";
-import { getListingsStats } from "../../controllers/stats.controller";
+import { getListingsStats, getAnalytics } from "../../controllers/stats.controller";
 
 const router = Router();
 
-// 👇 specific routes MUST come before /:id
+// specific routes MUST come before /:id
 router.get("/search", searchListings);
 router.get("/stats", getListingsStats);
+router.get("/analytics", getAnalytics);
 router.get("/", getAllListings);
 router.get("/:id", getListingById);
 router.post("/", authenticate, requireHost, strictLimiter, validate(createListingSchema), createListing);

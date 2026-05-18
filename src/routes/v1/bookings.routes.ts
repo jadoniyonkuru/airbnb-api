@@ -114,8 +114,10 @@ import { Router } from "express";
 import {
   getAllBookings,
   getBookingById,
+  getBookingsByUser,
   createBooking,
-  deleteBooking
+  updateBooking,
+  deleteBooking,
 } from "../../controllers/bookings.controller";
 import { validate } from "../../middleware/validate";
 import { createBookingSchema } from "../../validators/bookings.validator";
@@ -124,8 +126,10 @@ import { authenticate, requireGuest } from "../../middleware/auth.middleware";
 const router = Router();
 
 router.get("/", authenticate, getAllBookings);
+router.get("/user/:id", authenticate, getBookingsByUser);
 router.get("/:id", authenticate, getBookingById);
 router.post("/", authenticate, requireGuest, validate(createBookingSchema), createBooking);
+router.put("/:id", authenticate, updateBooking);
 router.delete("/:id", authenticate, deleteBooking);
 
 export default router;

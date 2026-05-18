@@ -26,24 +26,27 @@ enum BookingStatus {
 }
 
 model User {
-  id               String    @id @default(uuid())
+  id               String              @id @default(uuid())
   name             String
-  email            String    @unique
-  username         String    @unique
+  email            String              @unique
+  username         String              @unique
   phone            String
-  role             Role      @default(GUEST)
+  role             Role                @default(GUEST)
   password         String
   avatar           String?
   avatarPublicId   String?
   bio              String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
   resetToken       String?
   resetTokenExpiry DateTime?
   listings         Listing[]
   bookings         Booking[]
   reviews          Review[]
   profile          Profile?
+  guestConversations UserConversation[] @relation("GuestChats")
+  hostConversations  UserConversation[] @relation("HostChats")
+  sentMessages       UserMessage[]      @relation("SentMessages")
 
   @@index([role])
 }
@@ -58,23 +61,24 @@ model Profile {
 }
 
 model Listing {
-  id            String         @id @default(uuid())
-  title         String
-  description   String
-  location      String
-  pricePerNight Float
-  guests        Int
-  type          ListingType
-  amenities     String[]
-  rating        Float?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  host          User           @relation(fields: [hostId], references: [id], onDelete: Cascade)
-  hostId        String
-  bookings      Booking[]
-  reviews       Review[]
-  photos        ListingPhoto[]
-  conversations Conversation[]
+  id                String              @id @default(uuid())
+  title             String
+  description       String
+  location          String
+  pricePerNight     Float
+  guests            Int
+  type              ListingType
+  amenities         String[]
+  rating            Float?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  host              User                @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  hostId            String
+  bookings          Booking[]
+  reviews           Review[]
+  photos            ListingPhoto[]
+  conversations     Conversation[]
+  userConversations UserConversation[]
 
   @@index([hostId])
   @@index([location])
@@ -139,4 +143,33 @@ model Message {
   role         String
   content      String
   createdAt    DateTime     @default(now())
+}
+
+// Direct guest ↔ host messaging
+model UserConversation {
+  id        String        @id @default(uuid())
+  guestId   String
+  hostId    String
+  listingId String?
+  guest     User          @relation("GuestChats", fields: [guestId], references: [id], onDelete: Cascade)
+  host      User          @relation("HostChats", fields: [hostId], references: [id], onDelete: Cascade)
+  listing   Listing?      @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  messages  UserMessage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([guestId])
+  @@index([hostId])
+}
+
+model UserMessage {
+  id             String           @id @default(uuid())
+  content        String
+  senderId       String
+  sender         User             @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  conversation   UserConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId])
 }

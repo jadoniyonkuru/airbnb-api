@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { uploadToCloudinary, deleteFromCloudinary } from "../config/cloudinary";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { deleteCacheByPrefix, deleteCache } from "../config/cache";
 
 // POST /users/:id/avatar
 export async function uploadAvatar(req: Request, res: Response) {
@@ -60,14 +61,27 @@ export const uploadListingPhotos = async (req: AuthRequest, res: Response, next:
       res.status(400).json({ message: `You can only have 5 photos per listing. You have ${existingPhotos} and are trying to add ${files.length}` }); return;
     }
 
-    const uploadedPhotos = await Promise.all(
-      files.map(async (file) => {
-        const { url, publicId } = await uploadToCloudinary(file.buffer, "airbnb/listings");
-        return prisma.listingPhoto.create({ data: { url, publicId, listingId: id } });
-      })
-    );
+    const uploadedPhotos: any[] = [];
+    const failed: { filename: string; error: string }[] = [];
 
-    res.status(201).json({ message: `${uploadedPhotos.length} photo(s) uploaded successfully`, photos: uploadedPhotos });
+    // upload sequentially so one failure doesn't abort all
+    for (const file of files) {
+      try {
+        const { url, publicId } = await uploadToCloudinary(file.buffer, "airbnb/listings");
+        const photo = await prisma.listingPhoto.create({ data: { url, publicId, listingId: id } });
+        uploadedPhotos.push(photo);
+      } catch (err: any) {
+        console.error(`[Upload] Failed for ${file.originalname}:`, err?.message ?? err);
+        failed.push({ filename: file.originalname, error: err?.message ?? String(err) });
+      }
+    }
+
+    // Bust listing caches so fresh photos are returned on next fetch
+    deleteCacheByPrefix('listings:');
+    deleteCache(`listing:${id}`);
+
+    const message = `${uploadedPhotos.length} photo(s) uploaded successfully` + (failed.length ? `, ${failed.length} failed` : '');
+    res.status(201).json({ message, photos: uploadedPhotos, failures: failed });
   } catch (error) {
     next(error);
   }

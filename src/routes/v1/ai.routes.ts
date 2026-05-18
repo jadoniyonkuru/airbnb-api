@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   aiSearch,
+  describeFromForm,
   generateDescription,
   chat,
   recommend,
@@ -98,6 +99,7 @@ const router = Router();
  *                       example: ["apartment in Kigali under $100", "house for 4 guests in Musanze"]
  */
 router.post("/search", aiSearch);
+router.post("/describe", describeFromForm);
 
 /**
  * @swagger

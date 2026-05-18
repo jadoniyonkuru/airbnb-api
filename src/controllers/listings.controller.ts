@@ -4,10 +4,12 @@ import { createListingSchema, updateListingSchema } from "../validators/listings
 import { AuthRequest } from "../middleware/auth.middleware";
 import { getCache, setCache, deleteCache } from "../config/cache";
 
-// GET /listings
+// GET /listings  (supports ?hostId=xxx filter)
 export const getAllListings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const cacheKey = "listings:all";
+    const hostId = req.query.hostId as string | undefined;
+    const cacheKey = hostId ? `listings:host:${hostId}` : "listings:all";
+
     const cached = getCache(cacheKey);
     if (cached) {
       console.log("📦 Returning cached listings");
@@ -15,25 +17,24 @@ export const getAllListings = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
+    const where: any = {};
+    if (hostId) where.hostId = hostId;
+
     const listings = await prisma.listing.findMany({
+      where,
       include: {
         host: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-            role: true
-          }
+          select: { id: true, name: true, email: true, avatar: true, role: true }
         },
+        photos: true,
         _count: { select: { bookings: true, reviews: true } }
-      }
+      },
+      orderBy: { createdAt: "desc" }
     });
 
-    // cache for 60 seconds
-    setCache(cacheKey, listings, 60);
-
-    res.json(listings);
+    const response = { data: listings };
+    setCache(cacheKey, response, 60);
+    res.json(response);
   } catch (error) {
     next(error);
   }
@@ -49,32 +50,20 @@ export const getListingById = async (req: Request, res: Response, next: NextFunc
       include: {
         host: {
           select: {
-            // 👇 never include password
-            id: true,
-            name: true,
-            email: true,
-            username: true,
-            phone: true,
-            role: true,
-            avatar: true,
-            bio: true,
-            createdAt: true
+            id: true, name: true, email: true, username: true,
+            phone: true, role: true, avatar: true, bio: true, createdAt: true
           }
         },
+        photos: true,
         bookings: {
-          include: {
-            guest: {
-              select: { name: true, avatar: true }
-            }
-          }
+          where: { status: { not: "CANCELLED" } },
+          select: { checkIn: true, checkOut: true, status: true }
         },
         reviews: {
-          include: {
-            user: {
-              select: { name: true, avatar: true }
-            }
-          }
-        }
+          include: { user: { select: { name: true, avatar: true } } },
+          orderBy: { createdAt: "desc" }
+        },
+        _count: { select: { reviews: true, bookings: true } }
       }
     });
 
@@ -83,7 +72,7 @@ export const getListingById = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    res.json(listing);
+    res.json({ data: listing });
   } catch (error) {
     next(error);
   }
@@ -102,14 +91,15 @@ export const createListing = async (req: AuthRequest, res: Response, next: NextF
     const hostId = req.userId!;
 
     const newListing = await prisma.listing.create({
-      data: { ...result.data, hostId }
+      data: { ...result.data, hostId },
+      include: { photos: true, host: { select: { id: true, name: true, avatar: true } } }
     });
 
-    //clear cache when new listing is created
     deleteCache("listings:all");
+    deleteCache(`listings:host:${hostId}`);
     deleteCache("stats:listings");
 
-    res.status(201).json(newListing);
+    res.status(201).json({ data: newListing });
   } catch (error) {
     next(error);
   }
@@ -140,14 +130,15 @@ export const updateListing = async (req: AuthRequest, res: Response, next: NextF
 
     const updated = await prisma.listing.update({
       where: { id },
-      data: result.data
+      data: result.data,
+      include: { photos: true, host: { select: { id: true, name: true, avatar: true } } }
     });
 
-    //clear cache when listing is updated
     deleteCache("listings:all");
+    deleteCache(`listings:host:${existing.hostId}`);
     deleteCache("stats:listings");
 
-    res.json(updated);
+    res.json({ data: updated });
   } catch (error) {
     next(error);
   }
@@ -172,8 +163,8 @@ export const deleteListing = async (req: AuthRequest, res: Response, next: NextF
 
     await prisma.listing.delete({ where: { id } });
 
-    //clear cache when listing is deleted
     deleteCache("listings:all");
+    deleteCache(`listings:host:${existing.hostId}`);
     deleteCache("stats:listings");
 
     res.json({ message: "Listing deleted successfully" });
