@@ -14,6 +14,7 @@ import uploadRoutes from "./routes/v1/upload.routes";
 import reviewsRoutes from "./routes/v1/reviews.routes";
 import aiRoutes from "./routes/v1/ai.routes";
 import messagesRoutes from "./routes/v1/messages.routes";
+import adminRoutes from "./routes/v1/admin.routes";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -87,6 +88,7 @@ v1.use("/bookings", bookingsRoutes);
 v1.use("/ai", aiRoutes);
 v1.use("/messages", messagesRoutes);
 v1.use(reviewsRoutes);
+v1.use("/admin", adminRoutes);
 
 // mount v1
 app.use("/api/v1", v1);
