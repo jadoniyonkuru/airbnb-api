@@ -132,7 +132,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
 // PUT /bookings/:id  (host accepts or declines)
 export const updateBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     const { status } = req.body;
 
     if (!['CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(status)) {

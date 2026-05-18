@@ -40,7 +40,7 @@ export const getConversations = async (req: AuthRequest, res: Response, next: Ne
 export const getConversation = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = req.params.id as string;
     const conversation = await prisma.userConversation.findFirst({
       where: { id, OR: [{ guestId: userId }, { hostId: userId }] },
       include: CONVERSATION_INCLUDE
@@ -94,7 +94,7 @@ export const createConversation = async (req: AuthRequest, res: Response, next: 
 export const sendMessage = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { content } = req.body;
 
     if (!content?.trim()) { res.status(400).json({ message: "content is required" }); return; }
