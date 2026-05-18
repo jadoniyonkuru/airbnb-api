@@ -1,4 +1,4 @@
-import "dotenv/config";
+﻿import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import compression from "compression";
 import morgan from "morgan";
@@ -13,6 +13,7 @@ import bookingsRoutes from "./routes/v1/bookings.routes";
 import uploadRoutes from "./routes/v1/upload.routes";
 import reviewsRoutes from "./routes/v1/reviews.routes";
 import aiRoutes from "./routes/v1/ai.routes";
+import messagesRoutes from "./routes/v1/messages.routes";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -25,14 +26,24 @@ app.use(
     : morgan("dev")
 );
 
-// CORS configuration - allow Swagger UI and development origins
+const ALLOWED_ORIGINS = (process.env["ALLOWED_ORIGINS"] ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001'
-  ],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    try {
+      const url = new URL(origin);
+      const hostname = url.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') return callback(null, true);
+    } catch (e) {
+      // fallthrough
+    }
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -42,7 +53,7 @@ app.use(compression());
 app.use(express.json());
 app.use(generalLimiter);
 
-// health check — must be FIRST before everything
+// health check â€” must be FIRST before everything
 app.get("/health", (req: Request, res: Response) => {
   res.json({
     status: "ok",
@@ -68,14 +79,24 @@ v1.get("/", (req: Request, res: Response) => {
 
 v1.use("/auth", authRoutes);
 v1.use("/users", usersRoutes);
-v1.use("/users", uploadRoutes);
+// Mount upload routes at root so they register paths like
+// /users/:id/avatar and /listings/:id/photos (not /users/listings/...)
+v1.use("/", uploadRoutes);
 v1.use("/listings", listingsRoutes);
 v1.use("/bookings", bookingsRoutes);
 v1.use("/ai", aiRoutes);
+v1.use("/messages", messagesRoutes);
 v1.use(reviewsRoutes);
 
 // mount v1
 app.use("/api/v1", v1);
+
+// Support legacy links that point directly to the backend host (no /api/v1 prefix)
+const FRONTEND_URL = process.env["FRONTEND_URL"] || "http://localhost:5173";
+app.get("/auth/reset-password/:token", (req, res) => {
+  const { token } = req.params;
+  res.redirect(`${FRONTEND_URL}/reset-password/${token}`);
+});
 
 // old URL redirects
 app.use("/users", (req: Request, res: Response) => {
@@ -91,7 +112,7 @@ app.use((req: Request, res: Response) => {
   res.status(404).json({ error: "Route not found" });
 });
 
-// global error handler — must be last
+// global error handler â€” must be last
 app.use(errorHandler);
 
 const main = async () => {
